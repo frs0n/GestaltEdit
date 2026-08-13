@@ -1,6 +1,6 @@
 # GestaltEdit
 
-GestaltEdit is a native SwiftUI MobileGestalt utility that runs directly on iPhone. It reads the device's `com.apple.MobileGestalt.plist` and provides common capability presets, a complete field editor, and backup/import/restore workflows.
+GestaltEdit is a native SwiftUI MobileGestalt utility that runs directly on iPhone and Apple Vision Pro. It reads the device's `com.apple.MobileGestalt.plist` and provides common capability presets, a complete field editor, and backup/import/restore workflows.
 
 > [!WARNING]
 > This project uses private APIs and modifies system cache data. Incorrect MobileGestalt values can break system features or UI behavior and may require restoring the device. Use it only on devices you own or are authorized to manage.
@@ -39,12 +39,12 @@ Importing only copies a file into GestaltEdit's backup library; it does not imme
 
 ## Requirements and signing
 
-- Supported system versions: iOS 27 beta 1 through beta 4 only
+- Supported system versions: iOS/iPadOS and visionOS 27 beta 1 through beta 4 only
 - Xcode and a signing method that can install apps on the target device
 - Developer Mode enabled on the device
 - Bundle identifier: `me.ssus.gestaltedit`
 
-GestaltEdit checks the running system build before accessing MobileGestalt. The current release accepts only iOS 27 beta 1–4 (24A5355q, 24A5370h, 24A5380h, and 24A5390f). Apple may change these private behaviors at any time.
+GestaltEdit checks the running system build before accessing MobileGestalt. The current release accepts iOS 27 beta 1–4 (24A5355q, 24A5370h, 24A5380h, and 24A5390f) and visionOS 27 beta 1–4 (24M5291p, 24M5306i, 24M5316k, and 24M5326g). Apple may change these private behaviors at any time.
 
 ## Building
 

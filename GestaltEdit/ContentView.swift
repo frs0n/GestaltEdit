@@ -41,12 +41,12 @@ struct ContentView: View {
 private struct UnsupportedOSView: View {
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "iphone.slash")
+            Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
-            Text("Unsupported iOS Version")
+            Text("Unsupported OS Version")
                 .font(.title2.weight(.semibold))
-            Text("GestaltEdit currently supports only iOS 27 beta 1 through beta 4.")
+            Text("GestaltEdit currently supports only iOS and visionOS 27 beta 1 through beta 4.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
         }

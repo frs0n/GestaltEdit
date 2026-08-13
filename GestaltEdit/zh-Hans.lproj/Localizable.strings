@@ -16,8 +16,8 @@
 "This device does not officially support Siri AI. Force enabling spoofs the product, hardware, and CPU model. It may temporarily break Face ID, cause system instability or boot loops, and could require restoring the device. A backup will be created before writing." = "此设备并未正式支持 Siri AI。强制开启会伪装产品型号、硬件型号与 CPU 型号，可能暂时导致 Face ID 失效、系统不稳定或无限重启，并可能需要恢复设备。写入前会自动创建备份。";
 "Reading MobileGestalt…" = "正在读取 MobileGestalt…";
 "Unable to read MobileGestalt" = "无法读取 MobileGestalt";
-"Unsupported iOS Version" = "不支持的 iOS 版本";
-"GestaltEdit currently supports only iOS 27 beta 1 through beta 4." = "GestaltEdit 目前仅支持 iOS 27 beta 1 至 beta 4。";
+"Unsupported OS Version" = "不支持的系统版本";
+"GestaltEdit currently supports only iOS and visionOS 27 beta 1 through beta 4." = "GestaltEdit 目前仅支持 iOS 和 visionOS 27 beta 1 至 beta 4。";
 "Reload" = "重新读取";
 "Connected" = "已连接";
 "Current Device" = "当前设备";

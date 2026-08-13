@@ -15,8 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)shared;
 
-/// Returns whether this process is running on an iOS 27 build that GestaltEdit
-/// currently supports (developer beta 1 through beta 4).
+/// Returns whether this process is running on an iOS or visionOS 27 build that
+/// GestaltEdit currently supports (developer beta 1 through beta 4).
 + (BOOL)isRunningSupportedOS;
 
 /// The Darwin build identifier used by the supported-OS check, such as

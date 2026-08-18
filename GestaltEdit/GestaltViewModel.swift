@@ -16,6 +16,12 @@ final class GestaltViewModel: ObservableObject {
     @Published var stagesAIRegion = false
     @Published private(set) var isRespringing = false
 
+    /// Snapshot of which tweaks / AI region were already active in the plist
+    /// at load time. Used so that ``hasStagedTweaks`` only reports genuine
+    /// new changes rather than re-counting already-applied values.
+    private var appliedTweaks: Set<GestaltTweakID> = []
+    private var appliedAIRegion = false
+
     private let access = GestaltAccess.shared()
 
     var aiRegionProfile: AIRegionProfile? {
@@ -35,17 +41,19 @@ final class GestaltViewModel: ObservableObject {
     }
 
     var hasStagedTweaks: Bool {
-        !selectedTweaks.isEmpty
+        // Symmetric difference so that turning OFF an already-applied tweak
+        // also counts as a staged change, not just turning one on.
+        !selectedTweaks.symmetricDifference(appliedTweaks).isEmpty
             || dynamicIslandSubtype != nil
             || (changesModelName && !modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            || stagesAIRegion
+            || (stagesAIRegion != appliedAIRegion)
     }
 
     var stagedChangeCount: Int {
-        selectedTweaks.count
+        selectedTweaks.symmetricDifference(appliedTweaks).count
             + (dynamicIslandSubtype == nil ? 0 : 1)
             + (changesModelName ? 1 : 0)
-            + (stagesAIRegion ? 1 : 0)
+            + (stagesAIRegion != appliedAIRegion ? 1 : 0)
     }
 
     func load() {
@@ -62,11 +70,39 @@ final class GestaltViewModel: ObservableObject {
             }
             plist = GestaltPlist(dict: dictionary)
             isDirty = false
+            if !hasStagedTweaks {
+                syncStateFromPlist()
+            }
             refreshBackups()
         } catch {
             plist = nil
             report(error)
         }
+    }
+
+    /// Reads the current plist and populates every toggle / picker so that
+    /// the UI reflects the device's actual MobileGestalt state instead of
+    /// always starting from an empty baseline.
+    private func syncStateFromPlist() {
+        guard let plist else { return }
+
+        let applied = Set(
+            GestaltTweakCatalog.definitions
+                .filter { plist.isTweakApplied($0) }
+                .map { $0.id }
+        )
+        selectedTweaks = applied
+        appliedTweaks = applied
+
+        stagesAIRegion = isAIRegionConfigured
+        appliedAIRegion = stagesAIRegion
+
+        if let artwork = plist.cacheExtra["oPeik/9e8lQWMszEjbPzng"] as? [String: Any],
+           let name = artwork["ArtworkDeviceProductDescription"] as? String {
+            modelName = name
+        }
+        changesModelName = false
+        dynamicIslandSubtype = nil
     }
 
     func setTweak(_ id: GestaltTweakID, enabled: Bool) {
@@ -108,28 +144,26 @@ final class GestaltViewModel: ObservableObject {
                 try pending.setModelName(name)
             }
             var expectedConfiguration: AIRegionConfiguration?
-            if stagesAIRegion {
+            if stagesAIRegion && !appliedAIRegion {
+                // First-time enable: snapshot the device's original region
+                // values to the Keychain before overwriting them, so a later
+                // toggle-off can restore them exactly — even if GestaltEdit
+                // has been uninstalled and reinstalled in between.
+                try AIRegionBackupStore.save(from: pending)
                 let configuration = AIRegionConfiguration.resolve(for: pending)
-                let profile = configuration.profile
-                if let productType = configuration.spoofedProductType,
-                   let hardwareModel = configuration.spoofedHardwareModel,
-                   let cpuModel = configuration.spoofedCPUModel {
-                    pending.setCacheExtra(1, forKey: "A62OafQ85EJAiiqKn4agtg")
-                    pending.setCacheExtra(productType, forKey: "h9jDsbgj7xIVeIQ8S3/X3Q")
-                    pending.setCacheExtra(hardwareModel, forKey: "oYicEKzVTz4/CxxE05pEgQ")
-                    pending.setCacheExtra(cpuModel, forKey: "5pYKlGnYYBzGvAlIU8RjEQ")
-                }
-                pending.setCacheExtra("LL", forKey: "h63QSdBCiT/z0WU6rdQv6Q")
-                pending.setCacheExtra("LL/A", forKey: "yK+xavymRGZ3xWc1tb8XDg")
-                pending.setCacheExtra(profile.regulatoryModel, forKey: "97JDvERpVwO+GHtthIh7hA")
+                applyAIRegion(into: &pending, configuration: configuration)
                 expectedConfiguration = configuration
+            } else if !stagesAIRegion && appliedAIRegion {
+                // Turning off: restore the original values that were backed
+                // up when AI was enabled, then drop the Keychain entry so a
+                // subsequent enable starts from a fresh snapshot.
+                try AIRegionBackupStore.restore(into: &pending)
+                AIRegionBackupStore.clear()
             }
+            // When stagesAIRegion == appliedAIRegion the user did not flip
+            // the AI toggle, so the AI keys are left untouched.
             save(pending, expectedAIRegion: expectedConfiguration) { [weak self] in
-                self?.selectedTweaks.removeAll()
-                self?.dynamicIslandSubtype = nil
-                self?.changesModelName = false
-                self?.modelName = ""
-                self?.stagesAIRegion = false
+                self?.syncStateFromPlist()
             }
         } catch {
             report(error)
@@ -139,6 +173,36 @@ final class GestaltViewModel: ObservableObject {
     func applyChanges() {
         guard !isBusy, let plist else { return }
         save(plist, expectedAIRegion: nil)
+    }
+
+    /// Writes the US-region AI capability values into `pending`. Split out
+    /// from ``applySelectedTweaks`` so the enable path stays readable.
+    /// Every key written here must be listed in
+    /// ``AIRegionBackupStore/affectedKeys`` for the backup/restore cycle
+    /// to stay reversible; the assertion fails fast in debug builds if
+    /// the two lists ever drift apart.
+    private func applyAIRegion(into pending: inout GestaltPlist, configuration: AIRegionConfiguration) {
+        let profile = configuration.profile
+        var values: [String: Any] = [
+            "h63QSdBCiT/z0WU6rdQv6Q": "LL",
+            "yK+xavymRGZ3xWc1tb8XDg": "LL/A",
+            "97JDvERpVwO+GHtthIh7hA": profile.regulatoryModel
+        ]
+        if let productType = configuration.spoofedProductType,
+           let hardwareModel = configuration.spoofedHardwareModel,
+           let cpuModel = configuration.spoofedCPUModel {
+            values["A62OafQ85EJAiiqKn4agtg"] = 1
+            values["h9jDsbgj7xIVeIQ8S3/X3Q"] = productType
+            values["oYicEKzVTz4/CxxE05pEgQ"] = hardwareModel
+            values["5pYKlGnYYBzGvAlIU8RjEQ"] = cpuModel
+        }
+        assert(
+            values.keys.allSatisfy { AIRegionBackupStore.affectedKeys.contains($0) },
+            "applyAIRegion writes keys that AIRegionBackupStore does not back up"
+        )
+        for (key, value) in values {
+            pending.setCacheExtra(value, forKey: key)
+        }
     }
 
     func createBackup() {

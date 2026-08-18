@@ -96,8 +96,15 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
         [build isEqualToString:@"24A5355q"] || // iOS / iPadOS 27 beta 1
         [build isEqualToString:@"24A5370h"] || // iOS / iPadOS 27 beta 2
         [build isEqualToString:@"24A5380h"] || // iOS / iPadOS 27 beta 3
-        [build isEqualToString:@"24A5380i"] || // iPadOS 27 beta 3 v2
-        [build isEqualToString:@"24A5390f"]    // iOS / iPadOS 27 beta 4
+        [build isEqualToString:@"24A5380i"] || // iOS / iPadOS 27 beta 3 v2
+        [build isEqualToString:@"24A5380l"] || // iOS / iPadOS 27 Public Beta 1
+        [build isEqualToString:@"24A5390f"] || // iOS / iPadOS 27 beta 4
+        [build isEqualToString:@"24A5355Q"] || // iOS / iPadOS 27 beta 1
+        [build isEqualToString:@"24A5370H"] || // iOS / iPadOS 27 beta 2
+        [build isEqualToString:@"24A5380H"] || // iOS / iPadOS 27 beta 3
+        [build isEqualToString:@"24A5380I"] || // iOS / iPadOS 27 beta 3 v2
+        [build isEqualToString:@"24A5380L"] || // iOS / iPadOS 27 Public Beta 1
+        [build isEqualToString:@"24A5390F"]    // iOS / iPadOS 27 beta 4
     );
 }
 

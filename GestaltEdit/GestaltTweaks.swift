@@ -118,6 +118,35 @@ enum GestaltTweakError: LocalizedError {
 }
 
 extension GestaltPlist {
+    /// Checks whether every value in ``definition`` already matches the
+    /// corresponding ``CacheExtra`` entry, i.e. the tweak is already applied.
+    func isTweakApplied(_ definition: GestaltTweakDefinition) -> Bool {
+        let cacheExtra = self.cacheExtra
+        for (key, value) in definition.values {
+            guard let stored = cacheExtra[key] else { return false }
+            if !Self.valuesMatch(stored, value) { return false }
+        }
+        return true
+    }
+
+    private static func valuesMatch(_ stored: Any, _ expected: Any) -> Bool {
+        if let expectedArray = expected as? [Any] {
+            guard let storedArray = stored as? [Any] else { return false }
+            return expectedArray.allSatisfy { expectedItem in
+                storedArray.contains { storedItem in
+                    valuesMatch(storedItem, expectedItem)
+                }
+            }
+        }
+        if let storedNum = stored as? NSNumber, let expectedNum = expected as? NSNumber {
+            return storedNum.int64Value == expectedNum.int64Value
+        }
+        if let storedStr = stored as? String, let expectedStr = expected as? String {
+            return storedStr == expectedStr
+        }
+        return false
+    }
+
     mutating func apply(definition: GestaltTweakDefinition) throws {
         for (key, value) in definition.values {
             setCacheExtra(value, forKey: key)

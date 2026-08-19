@@ -115,6 +115,7 @@ final class GestaltViewModel: ObservableObject {
                    let hardwareModel = configuration.spoofedHardwareModel,
                    let cpuModel = configuration.spoofedCPUModel {
                     pending.setCacheExtra(1, forKey: "A62OafQ85EJAiiqKn4agtg")
+                    pending.setCacheExtra(2, forKey: "a3n5T9sFtlyQ74NEp9ESxg")
                     pending.setCacheExtra(productType, forKey: "h9jDsbgj7xIVeIQ8S3/X3Q")
                     pending.setCacheExtra(hardwareModel, forKey: "oYicEKzVTz4/CxxE05pEgQ")
                     pending.setCacheExtra(cpuModel, forKey: "5pYKlGnYYBzGvAlIU8RjEQ")
@@ -259,6 +260,7 @@ final class GestaltViewModel: ObservableObject {
                 }
                 if expectedAIRegion.requiresDeviceSpoofing {
                     guard cacheExtra["A62OafQ85EJAiiqKn4agtg"] as? Int == 1,
+                          cacheExtra["a3n5T9sFtlyQ74NEp9ESxg"] as? Int == 2,
                           cacheExtra["h9jDsbgj7xIVeIQ8S3/X3Q"] as? String == expectedAIRegion.spoofedProductType,
                           cacheExtra["oYicEKzVTz4/CxxE05pEgQ"] as? String == expectedAIRegion.spoofedHardwareModel,
                           cacheExtra["5pYKlGnYYBzGvAlIU8RjEQ"] as? String == expectedAIRegion.spoofedCPUModel else {

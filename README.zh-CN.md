@@ -67,12 +67,12 @@ GestaltEdit 是一款直接在 iPhone 和 iPad 上运行的 MobileGestalt 工具
 
 ## 系统要求与签名
 
-- 支持的系统版本：仅 iOS 与 iPadOS 27 beta 1 至 beta 4
+- 支持的系统版本：iOS 与 iPadOS 18，以及 27 beta 1 至 beta 4
 - 一种可以对 IPA 进行签名并安装的方式，例如 [iLoader](https://github.com/nab138/iloader)
 - 设备已开启开发者模式
 - Bundle identifier：`me.ssus.gestaltedit`
 
-GestaltEdit 在访问 MobileGestalt 前会检查当前系统版本号。当前版本接受 iOS 与 iPadOS 27 beta 1–4（24A5355q、24A5370h、24A5380h、24A5390f），以及 iPadOS beta 3 的修订版本 24A5380i。Apple 随时可能改变这些私有行为。
+GestaltEdit 在访问 MobileGestalt 前会检查当前系统版本号。当前版本接受 iOS 与 iPadOS 18（任意 build；bad_query 在 iOS 18 上的支持上游未验证，属 "ymmv"），以及 27 beta 1–4（24A5355q、24A5370h、24A5380h、24A5380i、24A5380l、24A5390f）。Apple 随时可能改变这些私有行为。
 
 ## 使用 iLoader 签名安装
 

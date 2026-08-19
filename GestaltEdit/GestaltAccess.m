@@ -92,14 +92,28 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
     NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
     NSString *build = self.currentOSBuild;
 
-    return version.majorVersion == 27 && (
-        [build isEqualToString:@"24A5355q"] || // iOS / iPadOS 27 beta 1
-        [build isEqualToString:@"24A5370h"] || // iOS / iPadOS 27 beta 2
-        [build isEqualToString:@"24A5380h"] || // iOS / iPadOS 27 beta 3
-        [build isEqualToString:@"24A5380i"] || // iPadOS 27 beta 3 v2
-        [build isEqualToString:@"24A5380l"] || // iOS / iPadOS 27 Public Beta 1 (revised beta 3, see issue #51)
-        [build isEqualToString:@"24A5390f"]    // iOS / iPadOS 27 beta 4
-    );
+    // iOS / iPadOS 27 developer betas 1-4 (validated against the bad_query
+    // upstream, which targets iOS 26.0 - 26.6.1 / 27.0b4).
+    if (version.majorVersion == 27) {
+        return (
+            [build isEqualToString:@"24A5355q"] || // iOS / iPadOS 27 beta 1
+            [build isEqualToString:@"24A5370h"] || // iOS / iPadOS 27 beta 2
+            [build isEqualToString:@"24A5380h"] || // iOS / iPadOS 27 beta 3
+            [build isEqualToString:@"24A5380i"] || // iPadOS 27 beta 3 v2
+            [build isEqualToString:@"24A5380l"] || // iOS / iPadOS 27 Public Beta 1 (revised beta 3, see issue #51)
+            [build isEqualToString:@"24A5390f"]    // iOS / iPadOS 27 beta 4
+        );
+    }
+
+    // iOS / iPadOS 18: bad_query may work but is unverified upstream
+    // ("might also work on iOS 18 ... ymmv"). Accepted broadly so it can be
+    // exercised on real devices; the actual capability is gated at connect
+    // time by BadQueryBridgeAvailable().
+    if (version.majorVersion == 18) {
+        return build.length > 0;
+    }
+
+    return NO;
 }
 
 #pragma mark - Connection
@@ -108,7 +122,7 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 {
     if (!GestaltAccess.isRunningSupportedOS) {
         if (error) *error = GestaltError(0, NSLocalizedString(
-            @"GestaltEdit currently supports only iOS and iPadOS 27 beta 1 through beta 4.", nil));
+            @"GestaltEdit currently supports iOS and iPadOS 18 and 27 beta 1 through beta 4.", nil));
         return NO;
     }
 

@@ -67,12 +67,12 @@ Importing only copies a file into GestaltEdit's backup library; it does not imme
 
 ## Requirements and signing
 
-- Supported system versions: iOS and iPadOS 27 beta 1 through beta 4 only
+- Supported system versions: iOS and iPadOS 18, and 27 beta 1 through beta 4
 - A way to sign and install the IPA, such as [iLoader](https://github.com/nab138/iloader)
 - Developer Mode enabled on the device
 - Bundle identifier: `me.ssus.gestaltedit`
 
-GestaltEdit checks the running system build before accessing MobileGestalt. The current release accepts iOS and iPadOS 27 beta 1–4 (24A5355q, 24A5370h, 24A5380h, and 24A5390f), plus the revised iPadOS beta 3 build 24A5380i. Apple may change these private behaviors at any time.
+GestaltEdit checks the running system build before accessing MobileGestalt. The current release accepts iOS and iPadOS 18 (any build; bad_query support is unverified upstream, "ymmv") and 27 beta 1–4 (24A5355q, 24A5370h, 24A5380h, 24A5380i, 24A5380l, 24A5390f). Apple may change these private behaviors at any time.
 
 ## Installing with iLoader
 

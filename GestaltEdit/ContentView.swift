@@ -46,7 +46,7 @@ private struct UnsupportedOSView: View {
                 .foregroundStyle(.secondary)
             Text("Unsupported OS Version")
                 .font(.title2.weight(.semibold))
-            Text("GestaltEdit currently supports only iOS and iPadOS 27 beta 1 through beta 4.")
+            Text("GestaltEdit currently supports only iOS and iPadOS 17 to 27. Please update your device to a supported version.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
         }

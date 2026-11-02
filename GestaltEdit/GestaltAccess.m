@@ -90,16 +90,9 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 + (BOOL)isRunningSupportedOS
 {
     NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
-    NSString *build = self.currentOSBuild;
-
-    return version.majorVersion == 27 && (
-        [build isEqualToString:@"24A5355q"] || // iOS / iPadOS 27 beta 1
-        [build isEqualToString:@"24A5370h"] || // iOS / iPadOS 27 beta 2
-        [build isEqualToString:@"24A5380h"] || // iOS / iPadOS 27 beta 3
-        [build isEqualToString:@"24A5380i"] || // iPadOS 27 beta 3 v2
-        [build isEqualToString:@"24A5380l"] || // iOS / iPadOS 27 Public Beta 1 (revised beta 3, see issue #51)
-        [build isEqualToString:@"24A5390f"]    // iOS / iPadOS 27 beta 4
-    );
+    
+    // iOS/iPadOS 17 ve üzeri tüm sürümlere izin ver
+    return version.majorVersion >= 17;
 }
 
 #pragma mark - Connection
@@ -108,9 +101,10 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 {
     if (!GestaltAccess.isRunningSupportedOS) {
         if (error) *error = GestaltError(0, NSLocalizedString(
-            @"GestaltEdit currently supports only iOS and iPadOS 27 beta 1 through beta 4.", nil));
+            @"GestaltEdit currently supports iOS and iPadOS 17 or later.", nil));
         return NO;
     }
+
 
     if (self.isConnected && _activeBadQueryLease.isActive &&
         self.plistPath.length > 0) {

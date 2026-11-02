@@ -2,50 +2,42 @@ name: Release unsigned IPA
 
 on:
   push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
-
-concurrency:
-  group: unsigned-release-${{ github.ref }}
-  cancel-in-progress: false
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
-  release:
-    runs-on: xcode-27
-    timeout-minutes: 30
+  build:
+    name: Build IPA
+    runs-on: macos-latest
 
     steps:
-      - name: Check out source
-        uses: actions/checkout@v7
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Build unsigned archive
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 'latest-stable'
+
+      - name: Build Archive (Unsigned)
         run: |
           xcodebuild archive \
             -project GestaltEdit.xcodeproj \
             -scheme GestaltEdit \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -archivePath "$RUNNER_TEMP/GestaltEdit.xcarchive" \
-            CODE_SIGN_IDENTITY="" \
+            -sdk iphoneos \
+            -archivePath build/GestaltEdit.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_IDENTITY=""
 
-      - name: Package unsigned IPA
+      - name: Package IPA
         run: |
-          mkdir -p "$RUNNER_TEMP/Payload"
-          cp -R \
-            "$RUNNER_TEMP/GestaltEdit.xcarchive/Products/Applications/GestaltEdit.app" \
-            "$RUNNER_TEMP/Payload/"
-          cd "$RUNNER_TEMP"
-          zip -qry "GestaltEdit-${GITHUB_REF_NAME}-unsigned.ipa" Payload
+          mkdir -p Payload
+          cp -r build/GestaltEdit.xcarchive/Products/Applications/*.app Payload/
+          zip -r GestaltEdit.ipa Payload
 
-      - name: Publish GitHub release
-        uses: softprops/action-gh-release@v3
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: GestaltEdit ${{ github.ref_name }}
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          files: ${{ runner.temp }}/GestaltEdit-${{ github.ref_name }}-unsigned.ipa
+          name: GestaltEdit-IPA
+          path: GestaltEdit.ipa

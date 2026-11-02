@@ -22,7 +22,8 @@ struct AIRegionProfile: Equatable {
         "iPhone 16 Plus": "A3082",
         "iPhone 16": "A3081",
         "iPhone 15 Pro Max": "A2849",
-        "iPhone 15 Pro": "A2848"
+        "iPhone 15 Pro": "A2848",
+        "İphone 11": "A2221"
     ]
 
     private static let productTypes: [String: AIRegionProfile] = [

@@ -64,6 +64,7 @@ private struct TweakWorkbench: View {
 
                 if viewModel.plist != nil {
                     tweakSection(.region)
+                    supervisionProbeSection
                     dynamicIslandSection
                     modelNameSection
 
@@ -107,6 +108,56 @@ private struct TweakWorkbench: View {
                     applyBar
                 }
             }
+        }
+    }
+
+    private var supervisionProbeSection: some View {
+        Section("Pseudo-Supervision") {
+            if !viewModel.hasLoadedPseudoSupervision {
+                Button("Load Current Options") {
+                    viewModel.loadPseudoSupervisionOptions()
+                }
+                .disabled(viewModel.isBusy)
+            }
+            Toggle("Skip Setup", isOn: Binding(
+                get: { viewModel.pseudoSkipSetup },
+                set: { viewModel.setPseudoSkipSetup($0) }
+            ))
+            .disabled(viewModel.isBusy || !viewModel.hasLoadedPseudoSupervision)
+            Toggle("Enable Supervision", isOn: Binding(
+                get: { viewModel.pseudoSupervisionEnabled },
+                set: { viewModel.setPseudoSupervisionEnabled($0) }
+            ))
+            .disabled(viewModel.isBusy || !viewModel.hasLoadedPseudoSupervision)
+            if viewModel.pseudoSupervisionEnabled {
+                TextField("Organization Name (Optional)", text: $viewModel.supervisionOrganizationName)
+                    .textInputAutocapitalization(.words)
+                    .disabled(viewModel.isBusy || !viewModel.hasLoadedPseudoSupervision)
+            }
+            Button {
+                viewModel.applyPseudoSupervision()
+            } label: {
+                HStack {
+                    Label("Apply Supervision Options", systemImage: "checkmark.shield")
+                    Spacer()
+                    if viewModel.isBusy { ProgressView().controlSize(.small) }
+                }
+            }
+            .disabled(viewModel.isBusy || !viewModel.hasLoadedPseudoSupervision)
+
+            Button {
+                viewModel.probePseudoSupervisionAccess()
+            } label: {
+                HStack {
+                    Label("Test CloudConfiguration access", systemImage: "lock.open")
+                    Spacer()
+                    if viewModel.isBusy { ProgressView().controlSize(.small) }
+                }
+            }
+            .disabled(viewModel.isBusy)
+            Text("Updates CloudConfigurationDetails.plist. PurpleBuddy setup flags are attempted when accessible; iOS may reject that separate path. This simulates supervision and does not enroll the device in MDM.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

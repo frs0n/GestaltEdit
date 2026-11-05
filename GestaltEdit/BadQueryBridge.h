@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (nullable instancetype)leaseForPath:(NSString *)path
                                 error:(NSString * _Nullable * _Nullable)error;
++ (nullable instancetype)leaseForPath:(NSString *)path
+                   containerIdentifier:(NSString *)containerIdentifier
+                                 error:(NSString * _Nullable * _Nullable)error;
 - (void)invalidate;
 
 @end

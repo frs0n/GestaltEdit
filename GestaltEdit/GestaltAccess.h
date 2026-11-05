@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GestaltAccess : NSObject
 
+@property(nonatomic, readonly) BOOL lastPseudoSupervisionUpdatedPurpleBuddy;
+
 + (instancetype)shared;
 
 /// Returns whether this process is running on an iOS or iPadOS 27 build that
@@ -33,6 +35,18 @@ NS_ASSUME_NONNULL_BEGIN
 /// Rewrites the existing plist inode and preserves its ownership, flags and
 /// extended attributes.
 - (BOOL)saveGestalt:(NSDictionary *)plist error:(NSError **)error;
+
+/// Attempts to read and open Nugget's supervision plist for writing without
+/// changing it. Intended as a capability probe only.
+- (nullable NSDictionary *)probePseudoSupervisionAccessWithError:(NSError **)error;
+- (nullable NSDictionary *)readPseudoSupervisionConfigurationWithError:(NSError **)error;
+
+/// Writes the same cloud-configuration and PurpleBuddy state used by Nugget.
+- (BOOL)applyPseudoSupervisionEnabled:(BOOL)enabled
+                            skipSetup:(BOOL)skipSetup
+                     organizationName:(NSString *)organizationName
+                 supervisorCertificate:(nullable NSData *)certificate
+                                error:(NSError **)error;
 
 @end
 

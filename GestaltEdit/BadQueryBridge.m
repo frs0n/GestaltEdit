@@ -95,6 +95,14 @@ BOOL BadQueryBridgeAvailable(void)
 
 + (instancetype)leaseForPath:(NSString *)path error:(NSString **)error
 {
+    // Preserve the original MobileGestalt call path and container exactly.
+    return [self leaseForPath:path containerIdentifier:kBadQueryIdentifier error:error];
+}
+
++ (instancetype)leaseForPath:(NSString *)path
+          containerIdentifier:(NSString *)containerIdentifier
+                        error:(NSString **)error
+{
     if (!path.isAbsolutePath) {
         if (error) *error = @"bad_query requires an absolute target path";
         return nil;
@@ -112,7 +120,9 @@ BOOL BadQueryBridgeAvailable(void)
     }
 
     api->setClass(query, kBadQueryContainerClass);
-    xpc_object_t identifier = xpc_string_create(kBadQueryIdentifier.UTF8String);
+    NSString *identifierString = containerIdentifier.length > 0
+        ? containerIdentifier : kBadQueryIdentifier;
+    xpc_object_t identifier = xpc_string_create(identifierString.UTF8String);
     api->setGroupIdentifiers(query, identifier);
 #if !OS_OBJECT_USE_OBJC
     xpc_release(identifier);

@@ -53,10 +53,26 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
     return YES;
 }
 
+static void GestaltRestoreDataAtPath(NSString *path, NSData *data)
+{
+    if (!data) {
+        unlink(path.fileSystemRepresentation);
+        return;
+    }
+    int fd = open(path.fileSystemRepresentation, O_WRONLY | O_CLOEXEC | O_NOFOLLOW);
+    if (fd < 0) return;
+    ftruncate(fd, 0);
+    lseek(fd, 0, SEEK_SET);
+    GestaltWriteAll(fd, data);
+    fsync(fd);
+    close(fd);
+}
+
 @interface GestaltAccess ()
 @property (nonatomic, assign) BOOL isConnected;
 @property (nonatomic, copy) NSString *plistPath;
 @property (nonatomic, assign) NSPropertyListFormat lastReadFormat;
+@property (nonatomic, assign, readwrite) BOOL lastPseudoSupervisionUpdatedPurpleBuddy;
 @end
 
 @implementation GestaltAccess
@@ -151,6 +167,281 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
     _activeBadQueryLease = badQueryLease;
     self.isConnected = YES;
     self.plistPath = badQueryPlist;
+    if (error) *error = nil;
+    return YES;
+}
+
+- (NSDictionary *)readPseudoSupervisionConfigurationWithError:(NSError **)error
+{
+    NSString * const group = @"systemgroup.com.apple.configurationprofiles";
+    NSString *directory = @"/private/var/containers/Shared/SystemGroup/"
+                          "systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles";
+    NSString *path = [directory stringByAppendingPathComponent:
+        @"CloudConfigurationDetails.plist"];
+    NSString *detail = nil;
+    BadQueryLease *lease = [BadQueryLease leaseForPath:path
+                                   containerIdentifier:group
+                                                 error:&detail];
+    if (!lease) {
+        if (error) *error = GestaltError(20, detail ?: NSLocalizedString(
+            @"Could not acquire access to the supervision configuration.", nil));
+        return nil;
+    }
+
+    NSError *readError = nil;
+    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:&readError];
+    [lease invalidate];
+    if (!data) {
+        if (error) *error = readError ?: GestaltError(22,
+            NSLocalizedString(@"Could not read the supervision plist.", nil));
+        return nil;
+    }
+    NSPropertyListFormat format = NSPropertyListBinaryFormat_v1_0;
+    id value = [NSPropertyListSerialization propertyListWithData:data
+        options:NSPropertyListImmutable format:&format error:&readError];
+    if (![value isKindOfClass:NSDictionary.class]) {
+        if (error) *error = readError ?: GestaltError(23,
+            NSLocalizedString(@"The supervision plist is not a dictionary.", nil));
+        return nil;
+    }
+    if (error) *error = nil;
+    return value;
+}
+
+- (NSDictionary *)probePseudoSupervisionAccessWithError:(NSError **)error
+{
+    NSDictionary *value = [self readPseudoSupervisionConfigurationWithError:error];
+    if (!value) return nil;
+    NSString *cloudPath = @"/private/var/containers/Shared/SystemGroup/"
+                          "systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist";
+    NSString *cloudDetail = nil;
+    BadQueryLease *cloudLease = [BadQueryLease leaseForPath:cloudPath
+        containerIdentifier:@"systemgroup.com.apple.configurationprofiles" error:&cloudDetail];
+    if (!cloudLease) {
+        if (error) *error = GestaltError(21, cloudDetail ?: NSLocalizedString(
+            @"Could not acquire write access to the supervision plist.", nil));
+        return nil;
+    }
+    int cloudFD = open(cloudPath.fileSystemRepresentation, O_RDWR | O_CLOEXEC | O_NOFOLLOW);
+    if (cloudFD < 0) {
+        int openError = errno;
+        [cloudLease invalidate];
+        if (error) *error = GestaltError(22, [NSString stringWithFormat:
+            NSLocalizedString(@"Supervision plist is not writable (errno=%d).", nil), openError]);
+        return nil;
+    }
+    close(cloudFD);
+    [cloudLease invalidate];
+
+    if (error) *error = nil;
+    return value;
+}
+
+- (BOOL)applyPseudoSupervisionEnabled:(BOOL)enabled
+                            skipSetup:(BOOL)skipSetup
+                     organizationName:(NSString *)organizationName
+                 supervisorCertificate:(NSData *)certificate
+                                error:(NSError **)error
+{
+    self.lastPseudoSupervisionUpdatedPurpleBuddy = NO;
+    NSString * const group = @"systemgroup.com.apple.configurationprofiles";
+    NSString *cloudPath = @"/private/var/containers/Shared/SystemGroup/"
+                          "systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist";
+    NSString *purplePath = @"/var/Managed Preferences/mobile/com.apple.purplebuddy.plist";
+    NSString *cloudDetail = nil;
+    BadQueryLease *cloudLease = [BadQueryLease leaseForPath:cloudPath
+                                        containerIdentifier:group error:&cloudDetail];
+    if (!cloudLease) {
+        if (error) *error = GestaltError(24, cloudDetail ?: NSLocalizedString(
+            @"Could not acquire access to the supervision configuration.", nil));
+        return NO;
+    }
+
+    NSError *readError = nil;
+    NSData *cloudOriginal = [NSData dataWithContentsOfFile:cloudPath options:0 error:&readError];
+    if (!cloudOriginal) {
+        [cloudLease invalidate];
+        if (error) *error = readError ?: GestaltError(25,
+            NSLocalizedString(@"Could not read the supervision configuration.", nil));
+        return NO;
+    }
+    NSPropertyListFormat format = NSPropertyListBinaryFormat_v1_0;
+    id cloudValue = [NSPropertyListSerialization propertyListWithData:cloudOriginal
+        options:NSPropertyListMutableContainersAndLeaves format:&format error:&readError];
+    if (![cloudValue isKindOfClass:NSMutableDictionary.class]) {
+        [cloudLease invalidate];
+        if (error) *error = readError ?: GestaltError(26,
+            NSLocalizedString(@"The supervision configuration is not a dictionary.", nil));
+        return NO;
+    }
+
+    NSMutableDictionary *cloud = (NSMutableDictionary *)cloudValue;
+    cloud[@"AllowPairing"] = @YES;
+    cloud[@"ConfigurationWasApplied"] = @YES;
+    cloud[@"CloudConfigurationUIComplete"] = @YES;
+    cloud[@"ConfigurationSource"] = @0;
+    cloud[@"PostSetupProfileWasInstalled"] = @YES;
+    if (skipSetup) {
+        cloud[@"SkipSetup"] = @[
+            @"Location", @"Restore", @"SIMSetup", @"Android", @"AppleID", @"IntendedUser", @"TOS",
+            @"Siri", @"ScreenTime", @"Diagnostics", @"SoftwareUpdate", @"Passcode", @"Biometric",
+            @"Payment", @"Zoom", @"DisplayTone", @"MessagingActivationUsingPhoneNumber",
+            @"HomeButtonSensitivity", @"CloudStorage", @"ScreenSaver", @"TapToSetup", @"Keyboard",
+            @"PreferredLanguage", @"SpokenLanguage", @"WatchMigration", @"OnBoarding",
+            @"TVProviderSignIn", @"TVHomeScreenSync", @"Privacy", @"TVRoom", @"iMessageAndFaceTime",
+            @"AppStore", @"Safety", @"Multitasking", @"ActionButton", @"TermsOfAddress",
+            @"AccessibilityAppearance", @"Welcome", @"Appearance", @"RestoreCompleted", @"UpdateCompleted",
+            @"WiFi", @"Display", @"Tone", @"LanguageAndLocale", @"TouchID", @"TrueToneDisplay",
+            @"FileVault", @"iCloudStorage", @"iCloudDiagnostics", @"Registration", @"DeviceToDeviceMigration",
+            @"UnlockWithWatch", @"Accessibility", @"All", @"ExpressLanguage", @"Language", @"N/A",
+            @"Region", @"Avatar", @"DeviceProtection", @"Key", @"LockdownMode", @"Wallpaper",
+            @"PrivacySubtitle", @"SecuritySubtitle", @"DataSubtitle", @"AppleIDSubtitle", @"AppearanceSubtitle",
+            @"PreferredLang", @"OnboardingSubtitle", @"AppleTVSubtitle", @"Intelligence", @"WebContentFiltering",
+            @"CameraButton", @"AdditionalPrivacySettings", @"EnableLockdownMode", @"OSShowcase",
+            @"SafetyAndHandling", @"Tips", @"AgeBasedSafetySettings"
+        ];
+    } else {
+        [cloud removeObjectForKey:@"SkipSetup"];
+    }
+
+    cloud[@"IsSupervised"] = @(enabled);
+    NSString *organization = [organizationName stringByTrimmingCharactersInSet:
+        NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (enabled && organization.length > 0) {
+        cloud[@"OrganizationName"] = organization;
+        cloud[@"OrganizationMagic"] = NSUUID.UUID.UUIDString;
+        cloud[@"IsMDMUnremovable"] = @NO;
+        if (certificate.length > 0) cloud[@"SupervisorHostCertificates"] = @[certificate];
+    } else {
+        [cloud removeObjectForKey:@"OrganizationName"];
+        [cloud removeObjectForKey:@"OrganizationMagic"];
+        [cloud removeObjectForKey:@"IsMDMUnremovable"];
+        [cloud removeObjectForKey:@"SupervisorHostCertificates"];
+    }
+
+    NSData *cloudUpdated = [NSPropertyListSerialization dataWithPropertyList:cloud
+        format:format options:0 error:&readError];
+    if (!cloudUpdated) {
+        [cloudLease invalidate];
+        if (error) *error = readError ?: GestaltError(27,
+            NSLocalizedString(@"Could not serialize the supervision configuration.", nil));
+        return NO;
+    }
+
+    NSString *purpleDetail = nil;
+    BadQueryLease *purpleLease = nil;
+    if (skipSetup) {
+        purpleLease = [BadQueryLease leaseForPath:purplePath
+                              containerIdentifier:group error:&purpleDetail];
+    }
+
+    NSError *purpleReadError = nil;
+    BOOL canWritePurple = purpleLease != nil;
+    BOOL purpleExisted = canWritePurple && [[NSFileManager defaultManager] fileExistsAtPath:purplePath];
+    NSData *purpleOriginal = skipSetup && canWritePurple
+        ? [NSData dataWithContentsOfFile:purplePath options:0 error:&purpleReadError]
+        : nil;
+    if (skipSetup && canWritePurple && purpleExisted && !purpleOriginal) {
+        [purpleLease invalidate];
+        [cloudLease invalidate];
+        if (error) *error = purpleReadError ?: GestaltError(36,
+            NSLocalizedString(@"Could not read existing PurpleBuddy setup state.", nil));
+        return NO;
+    }
+    NSMutableDictionary *purple = [NSMutableDictionary dictionary];
+    if (purpleOriginal) {
+        id existing = [NSPropertyListSerialization propertyListWithData:purpleOriginal
+            options:NSPropertyListMutableContainersAndLeaves format:nil error:&readError];
+        if ([existing isKindOfClass:NSDictionary.class]) [purple addEntriesFromDictionary:existing];
+    }
+    NSData *purpleUpdated = purpleOriginal;
+    if (skipSetup && canWritePurple) {
+        purple[@"SetupDone"] = @YES;
+        purple[@"SetupFinishedAllSteps"] = @YES;
+        purple[@"UserChoseLanguage"] = @YES;
+        purpleUpdated = [NSPropertyListSerialization dataWithPropertyList:purple
+            format:NSPropertyListBinaryFormat_v1_0 options:0 error:&readError];
+    }
+    if (skipSetup && canWritePurple && !purpleUpdated) {
+        [purpleLease invalidate];
+        [cloudLease invalidate];
+        if (error) *error = readError ?: GestaltError(29,
+            NSLocalizedString(@"Could not serialize PurpleBuddy setup state.", nil));
+        return NO;
+    }
+
+    // Keep a local copy of both original files before either write.
+    NSString *backupRoot = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
+        NSUserDomainMask, YES).firstObject;
+    NSString *backupDir = [[backupRoot stringByAppendingPathComponent:@"Pseudo-Supervision Backups"]
+        stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
+    NSError *backupError = nil;
+    [[NSFileManager defaultManager] createDirectoryAtPath:backupDir
+        withIntermediateDirectories:YES attributes:nil error:&backupError];
+    BOOL backupOK = backupError == nil && [cloudOriginal writeToFile:
+        [backupDir stringByAppendingPathComponent:@"CloudConfigurationDetails.plist"]
+        options:NSDataWritingAtomic error:&backupError];
+    if (backupOK && purpleOriginal) {
+        backupOK = [purpleOriginal writeToFile:[backupDir stringByAppendingPathComponent:
+            @"com.apple.purplebuddy.plist"] options:NSDataWritingAtomic error:&backupError];
+    }
+    if (!backupOK) {
+        [purpleLease invalidate];
+        [cloudLease invalidate];
+        if (error) *error = backupError ?: GestaltError(30,
+            NSLocalizedString(@"Could not back up supervision files.", nil));
+        return NO;
+    }
+
+    int cloudFD = open(cloudPath.fileSystemRepresentation, O_WRONLY | O_CLOEXEC | O_NOFOLLOW);
+    BOOL cloudWritten = cloudFD >= 0 && ftruncate(cloudFD, 0) == 0 &&
+        lseek(cloudFD, 0, SEEK_SET) == 0 && GestaltWriteAll(cloudFD, cloudUpdated) && fsync(cloudFD) == 0;
+    int cloudWriteError = errno;
+    if (cloudFD >= 0) close(cloudFD);
+    if (!cloudWritten) {
+        GestaltRestoreDataAtPath(cloudPath, cloudOriginal);
+        [purpleLease invalidate];
+        [cloudLease invalidate];
+        if (error) *error = GestaltError(31, [NSString stringWithFormat:
+            NSLocalizedString(@"Could not write CloudConfigurationDetails.plist (errno=%d). The original was restored.", nil), cloudWriteError]);
+        return NO;
+    }
+
+    int purpleFD = skipSetup && canWritePurple ? open(purplePath.fileSystemRepresentation,
+        O_WRONLY | O_CLOEXEC | O_NOFOLLOW | O_CREAT, 0644) : -1;
+    BOOL purpleWritten = !skipSetup || !canWritePurple || (purpleFD >= 0 && ftruncate(purpleFD, 0) == 0 &&
+        lseek(purpleFD, 0, SEEK_SET) == 0 && GestaltWriteAll(purpleFD, purpleUpdated) && fsync(purpleFD) == 0);
+    int purpleWriteError = errno;
+    if (purpleFD >= 0) close(purpleFD);
+    if (!purpleWritten) {
+        // Roll back the cloud plist if the companion setup file cannot be written.
+        GestaltRestoreDataAtPath(cloudPath, cloudOriginal);
+        GestaltRestoreDataAtPath(purplePath, purpleOriginal);
+        [purpleLease invalidate];
+        [cloudLease invalidate];
+        if (error) *error = GestaltError(32, [NSString stringWithFormat:
+            NSLocalizedString(@"Could not write PurpleBuddy setup state (errno=%d). Both originals were restored.", nil), purpleWriteError]);
+        return NO;
+    }
+
+    NSData *cloudVerification = [NSData dataWithContentsOfFile:cloudPath options:0 error:nil];
+    NSData *purpleVerification = [NSData dataWithContentsOfFile:purplePath options:0 error:nil];
+    [purpleLease invalidate];
+    [cloudLease invalidate];
+    if (![cloudVerification isEqualToData:cloudUpdated] ||
+        (skipSetup && canWritePurple && ![purpleVerification isEqualToData:purpleUpdated])) {
+        // Verification failed: restore the exact original data before reporting.
+        cloudLease = [BadQueryLease leaseForPath:cloudPath containerIdentifier:group error:nil];
+        purpleLease = [BadQueryLease leaseForPath:purplePath containerIdentifier:group error:nil];
+        GestaltRestoreDataAtPath(cloudPath, cloudOriginal);
+        GestaltRestoreDataAtPath(purplePath, purpleOriginal);
+        [purpleLease invalidate];
+        [cloudLease invalidate];
+        if (error) *error = GestaltError(33, NSLocalizedString(
+            @"Post-write verification failed; original file contents were restored.", nil));
+        return NO;
+    }
+    self.lastPseudoSupervisionUpdatedPurpleBuddy = skipSetup && canWritePurple;
     if (error) *error = nil;
     return YES;
 }

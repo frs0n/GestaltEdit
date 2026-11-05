@@ -14,6 +14,10 @@ final class GestaltViewModel: ObservableObject {
     @Published var changesModelName = false
     @Published var modelName = ""
     @Published var stagesAIRegion = false
+    @Published var pseudoSupervisionEnabled = false
+    @Published var pseudoSkipSetup = false
+    @Published var supervisionOrganizationName = ""
+    @Published private(set) var hasLoadedPseudoSupervision = false
     @Published private(set) var isRespringing = false
 
     private let access = GestaltAccess.shared()
@@ -65,6 +69,92 @@ final class GestaltViewModel: ObservableObject {
             refreshBackups()
         } catch {
             plist = nil
+            report(error)
+        }
+    }
+
+    func loadPseudoSupervisionOptions() {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            guard let cloudConfiguration = try access.readPseudoSupervisionConfiguration() as? [String: Any] else {
+                throw GestaltEditError.invalidPlist
+            }
+            setLoadedPseudoSupervisionOptions(from: cloudConfiguration)
+            notice = GestaltNotice(kind: .info, message: String(localized: "Loaded current Nugget-style supervision options."))
+        } catch {
+            report(error)
+        }
+    }
+
+    private func setLoadedPseudoSupervisionOptions(from cloudConfiguration: [String: Any]) {
+        pseudoSupervisionEnabled = (cloudConfiguration["IsSupervised"] as? Bool) == true
+        pseudoSkipSetup = (cloudConfiguration["SkipSetup"] as? [String])?.contains("All") == true
+        supervisionOrganizationName = cloudConfiguration["OrganizationName"] as? String ?? ""
+        hasLoadedPseudoSupervision = true
+    }
+
+    func setPseudoSupervisionEnabled(_ enabled: Bool) {
+        pseudoSupervisionEnabled = enabled
+        if enabled { pseudoSkipSetup = true }
+    }
+
+    func setPseudoSkipSetup(_ enabled: Bool) {
+        pseudoSkipSetup = enabled
+        if !enabled { pseudoSupervisionEnabled = false }
+    }
+
+    func applyPseudoSupervision() {
+        guard !isBusy else { return }
+        guard !pseudoSupervisionEnabled || pseudoSkipSetup else {
+            notice = GestaltNotice(kind: .error, message: String(localized: "Nugget-style supervision requires Skip Setup."))
+            return
+        }
+
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let organization = supervisionOrganizationName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let certificate = pseudoSupervisionEnabled && !organization.isEmpty
+                ? try PseudoSupervisionCertificate.make(commonName: organization)
+                : nil
+            try access.applyPseudoSupervisionEnabled(
+                pseudoSupervisionEnabled,
+                skipSetup: pseudoSkipSetup,
+                organizationName: organization,
+                supervisorCertificate: certificate
+            )
+            let message = pseudoSkipSetup && !access.lastPseudoSupervisionUpdatedPurpleBuddy
+                ? String(localized: "CloudConfiguration was updated, but iOS rejected PurpleBuddy access. Skip Setup may be incomplete. A restart may be needed.")
+                : String(localized: "Nugget-style supervision options were updated. A restart may be needed for iOS to reflect the new state.")
+            notice = GestaltNotice(kind: .info, message: message)
+            isRespringing = true
+        } catch {
+            report(error)
+        }
+    }
+
+    func probePseudoSupervisionAccess() {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            guard let cloudConfig = try access.readPseudoSupervisionConfiguration() as? [String: Any] else {
+                throw GestaltEditError.invalidPlist
+            }
+            setLoadedPseudoSupervisionOptions(from: cloudConfig)
+            guard (try access.probePseudoSupervisionAccess()) != nil else {
+                throw GestaltEditError.invalidPlist
+            }
+            let state = (cloudConfig["IsSupervised"] as? Bool) == true
+                ? String(localized: "already marked supervised")
+                : String(localized: "not currently marked supervised")
+            notice = GestaltNotice(
+                kind: .info,
+                message: String(format: String(localized: "Write access to CloudConfigurationDetails.plist succeeded; supervision is %@. No values were changed."), state)
+            )
+        } catch {
             report(error)
         }
     }

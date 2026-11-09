@@ -10,21 +10,15 @@ struct AIRegionProfile: Equatable {
         self.regulatoryModel = regulatoryModel
     }
 
-    private static let regulatoryModels: [String: String] = [
-        "iPhone 17e": "A3575",
-        "iPhone 17 Pro Max": "A3257",
-        "iPhone 17 Pro": "A3256",
-        "iPhone 17": "A3258",
-        "iPhone Air": "A3260",
-        "iPhone 16e": "A3212",
-        "iPhone 16 Pro Max": "A3084",
-        "iPhone 16 Pro": "A3083",
-        "iPhone 16 Plus": "A3082",
-        "iPhone 16": "A3081",
-        "iPhone 15 Pro Max": "A2849",
-        "iPhone 15 Pro": "A2848"
-    ]
+    // Keep the legacy iPhone marketing-name fallback in sync with the
+    // authoritative product table. iPad names do not distinguish Wi-Fi/cellular.
+    private static let regulatoryModels: [String: String] = productTypes.reduce(into: [:]) { models, entry in
+        guard entry.key.hasPrefix("iPhone") else { return }
+        models[entry.value.marketingName] = entry.value.regulatoryModel
+    }
 
+    // Model numbers: https://support.apple.com/en-us/108044
+    // Identifiers: https://github.com/libimobiledevice/libirecovery/blob/master/src/libirecovery.c
     private static let productTypes: [String: AIRegionProfile] = [
         "iPhone16,1": .init(marketingName: "iPhone 15 Pro", regulatoryModel: "A2848"),
         "iPhone16,2": .init(marketingName: "iPhone 15 Pro Max", regulatoryModel: "A2849"),
@@ -33,6 +27,17 @@ struct AIRegionProfile: Equatable {
         "iPhone17,3": .init(marketingName: "iPhone 16", regulatoryModel: "A3081"),
         "iPhone17,4": .init(marketingName: "iPhone 16 Plus", regulatoryModel: "A3082"),
         "iPhone17,5": .init(marketingName: "iPhone 16e", regulatoryModel: "A3212"),
+        "iPhone18,1": .init(marketingName: "iPhone 17 Pro", regulatoryModel: "A3256"),
+        "iPhone18,2": .init(marketingName: "iPhone 17 Pro Max", regulatoryModel: "A3257"),
+        "iPhone18,3": .init(marketingName: "iPhone 17", regulatoryModel: "A3258"),
+        "iPhone18,4": .init(marketingName: "iPhone Air", regulatoryModel: "A3260"),
+        "iPhone18,5": .init(marketingName: "iPhone 17e", regulatoryModel: "A3575"),
+        "iPhone19,2": .init(marketingName: "iPhone 18 Pro", regulatoryModel: "A3472"),
+        "iPhone19,3": .init(marketingName: "iPhone 18 Pro Max", regulatoryModel: "A3473"),
+        // The global variant uses a different board; region conversion retains
+        // its product identity and follows the existing US regulatory mapping.
+        "iPhone19,7": .init(marketingName: "iPhone 18 Pro Max", regulatoryModel: "A3473"),
+        "iPhone19,4": .init(marketingName: "iPhone Duo", regulatoryModel: "A3447"),
 
         // Apple Intelligence iPads. Cellular variants map to their US
         // equivalent, including devices sold originally in mainland China.

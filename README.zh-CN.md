@@ -14,7 +14,7 @@
   <a href="https://github.com/frs0n/GestaltEdit/releases"><img src="https://img.shields.io/github/downloads/frs0n/GestaltEdit/total?style=flat-square&label=downloads&color=6E56CF" alt="下载量"></a>
   <a href="https://github.com/frs0n/GestaltEdit/stargazers"><img src="https://img.shields.io/github/stars/frs0n/GestaltEdit?style=flat-square&color=6E56CF" alt="Stars"></a>
   <img src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-27-000000?style=flat-square&logo=apple&logoColor=white" alt="支持平台">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Noncommercial-6E56CF?style=flat-square" alt="PolyForm 非商业许可证"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-6E56CF?style=flat-square" alt="GPL-3.0 或更高版本"></a>
 </p>
 
 <a href="https://github.com/frs0n/GestaltEdit/releases/latest"><b>下载 IPA</b></a> ·
@@ -42,7 +42,7 @@
 
 ## 系统要求
 
-- iOS / iPadOS 27 beta 1–4
+- iOS / iPadOS 26.0 或更高版本
 - 设备已开启开发者模式
 - 一种签名安装方式，例如 [iLoader](https://github.com/nab138/iloader)
 
@@ -55,11 +55,13 @@
 ## 致谢
 
 - [Nugget](https://github.com/leminlimez/Nugget) —— 预设与 iPadOS 支持
-- [FilzaSlop](https://github.com/0xjohnnydev/FilzaSlop)、[bad_query](https://github.com/forcequitOS/bad_query)、[0xJohnny](https://x.com/0xjohnny) —— 文件访问研究
+- [FilzaSlop](https://github.com/0xjohnnydev/FilzaSlop)、[worse_query](https://github.com/forcequitOS/worse_query)、[0xJohnny](https://x.com/0xjohnny) —— 文件访问研究
 - [neospring](https://github.com/rooootdev/neospring) —— 注销实现
 
 与 Apple 及上述项目均无隶属关系。
 
 ## 许可证
 
-[PolyForm Noncommercial License 1.0.0](LICENSE) —— 非商业用途免费；不得用于商业目的。
+[GNU 通用公共许可证第 3 版或更高版本](LICENSE)。
+
+签名团队须配置 App Group `group.<bundle identifier>.worsequery`。集成的 worse_query 代码保留原作者的版权和许可声明。

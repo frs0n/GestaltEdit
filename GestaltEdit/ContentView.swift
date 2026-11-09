@@ -7,7 +7,6 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if GestaltAccess.isRunningSupportedOS() {
                 TabView {
                     TweakWorkbench()
                         .tabItem { Label("Tools", systemImage: "switch.2") }
@@ -19,9 +18,6 @@ struct ContentView: View {
                         .tabItem { Label("Restore", systemImage: "archivebox") }
                 }
                 .task { viewModel.load() }
-            } else {
-                UnsupportedOSView()
-            }
         }
         .overlay {
             if viewModel.isRespringing {
@@ -35,22 +31,6 @@ struct ContentView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-    }
-}
-
-private struct UnsupportedOSView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 44))
-                .foregroundStyle(.secondary)
-            Text("Unsupported OS Version")
-                .font(.title2.weight(.semibold))
-            Text("GestaltEdit currently supports only iOS and iPadOS 27 beta 1 through beta 4.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-        }
-        .padding(24)
     }
 }
 

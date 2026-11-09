@@ -2,16 +2,13 @@
 //  GestaltAccess.m
 //  GestaltEdit
 //
-//  bad_query path traversal (iOS 26 / 27):
-//       class 13, MobileGestalt SystemGroup, part 3, target absolute path,
-//       flags 0x8000000000; directly consumes the sandbox token
+//  Access via the forcequitOS/worse_query App Group symlink PoC.
 
 #import "GestaltAccess.h"
-#import "BadQueryBridge.h"
+#import "worse_query.h"
 
 #import <errno.h>
 #import <fcntl.h>
-#import <sys/sysctl.h>
 #import <unistd.h>
 
 static NSString * const kGestaltPlistFileName = @"com.apple.MobileGestalt.plist";
@@ -19,7 +16,7 @@ static NSString * const kGestaltPlistFileName = @"com.apple.MobileGestalt.plist"
 static NSString * const kMobileGestaltCacheDirectory =
     @"/private/var/containers/Shared/SystemGroup/"
      "systemgroup.com.apple.mobilegestaltcache/Library/Caches";
-static NSString * const kBadQueryMobileGestaltCacheDirectory =
+static NSString * const kWorseQueryMobileGestaltCacheDirectory =
     @"/var/containers/Shared/SystemGroup/"
      "systemgroup.com.apple.mobilegestaltcache/Library/Caches";
 
@@ -61,7 +58,8 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 
 @implementation GestaltAccess
 {
-    BadQueryLease *_activeBadQueryLease;
+    int64_t _sandboxHandle;
+    BOOL _hasSandboxHandle;
 }
 
 + (instancetype)shared
@@ -72,85 +70,49 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
     return shared;
 }
 
-+ (NSString *)currentOSBuild
-{
-    size_t length = 0;
-    if (sysctlbyname("kern.osversion", NULL, &length, NULL, 0) != 0 ||
-        length == 0) {
-        return @"";
-    }
-
-    NSMutableData *data = [NSMutableData dataWithLength:length];
-    if (sysctlbyname("kern.osversion", data.mutableBytes, &length, NULL, 0) != 0)
-        return @"";
-
-    return [NSString stringWithUTF8String:data.bytes] ?: @"";
-}
-
-+ (BOOL)isRunningSupportedOS
-{
-    NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
-    NSString *build = self.currentOSBuild;
-
-    return version.majorVersion == 27 && (
-        [build isEqualToString:@"24A5355q"] || // iOS / iPadOS 27 beta 1
-        [build isEqualToString:@"24A5370h"] || // iOS / iPadOS 27 beta 2
-        [build isEqualToString:@"24A5380h"] || // iOS / iPadOS 27 beta 3
-        [build isEqualToString:@"24A5380i"] || // iPadOS 27 beta 3 v2
-        [build isEqualToString:@"24A5380l"] || // iOS / iPadOS 27 Public Beta 1 (revised beta 3, see issue #51)
-        [build isEqualToString:@"24A5390f"]    // iOS / iPadOS 27 beta 4
-    );
-}
-
 #pragma mark - Connection
 
 - (BOOL)connectWithError:(NSError **)error
 {
-    if (!GestaltAccess.isRunningSupportedOS) {
-        if (error) *error = GestaltError(0, NSLocalizedString(
-            @"GestaltEdit currently supports only iOS and iPadOS 27 beta 1 through beta 4.", nil));
-        return NO;
-    }
-
-    if (self.isConnected && _activeBadQueryLease.isActive &&
-        self.plistPath.length > 0) {
+    if (self.isConnected && _hasSandboxHandle && self.plistPath.length > 0) {
         if (error) *error = nil;
         return YES;
     }
 
-    if (!BadQueryBridgeAvailable()) {
-        if (error) *error = GestaltError(1, NSLocalizedString(
-            @"bad_query is unavailable (required ContainerManager or sandbox extension APIs are missing).", nil));
-        return NO;
-    }
-
-    [_activeBadQueryLease invalidate];
-    _activeBadQueryLease = nil;
+    if (_hasSandboxHandle) worse_query_release(_sandboxHandle);
+    _hasSandboxHandle = NO;
     self.isConnected = NO;
     self.plistPath = nil;
 
-    NSString *badQueryTarget = [kBadQueryMobileGestaltCacheDirectory
+    NSString *target = [kWorseQueryMobileGestaltCacheDirectory
         stringByAppendingPathComponent:kGestaltPlistFileName];
-    NSString *badQueryPlist = [kMobileGestaltCacheDirectory
+    NSString *plist = [kMobileGestaltCacheDirectory
         stringByAppendingPathComponent:kGestaltPlistFileName];
-    NSString *badQueryDetail = nil;
-    BadQueryLease *badQueryLease = [BadQueryLease leaseForPath:badQueryTarget
-                                                        error:&badQueryDetail];
-    if (!badQueryLease) {
-        if (error) *error = GestaltError(2,
-            badQueryDetail ?: NSLocalizedString(@"bad_query failed.", nil));
+    NSString *bundleIdentifier = NSBundle.mainBundle.bundleIdentifier;
+    NSString *group = bundleIdentifier.length ?
+        [NSString stringWithFormat:@"group.%@.worsequery", bundleIdentifier] : nil;
+    if (![group isKindOfClass:NSString.class] || group.length == 0) {
+        if (error) *error = GestaltError(1, NSLocalizedString(@"worse_query App Group is not configured.", nil));
         return NO;
     }
-    if (!GestaltCanOpenReadWrite(badQueryPlist)) {
-        [badQueryLease invalidate];
+    int64_t handle = worse_query(target, group, false, false);
+    if (handle < 0) {
+        if (error) *error = GestaltError(2, [NSString stringWithFormat:
+            NSLocalizedString(@"worse_query failed (code %lld). Check the App Group signing configuration.", nil),
+            (long long)handle]);
+        return NO;
+    }
+    if (!GestaltCanOpenReadWrite(plist)) {
+        worse_query_release(handle);
         if (error) *error = GestaltError(3, NSLocalizedString(
-            @"bad_query acquired a sandbox extension, but the MobileGestalt plist is not writable.", nil));
+            @"worse_query acquired a sandbox extension, but the MobileGestalt plist is not writable.", nil));
         return NO;
     }
 
-    _activeBadQueryLease = badQueryLease;
+    _sandboxHandle = handle;
+    _hasSandboxHandle = YES;
     self.isConnected = YES;
-    self.plistPath = badQueryPlist;
+    self.plistPath = plist;
     if (error) *error = nil;
     return YES;
 }

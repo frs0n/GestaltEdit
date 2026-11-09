@@ -14,7 +14,7 @@
   <a href="https://github.com/frs0n/GestaltEdit/releases"><img src="https://img.shields.io/github/downloads/frs0n/GestaltEdit/total?style=flat-square&label=downloads&color=6E56CF" alt="Downloads"></a>
   <a href="https://github.com/frs0n/GestaltEdit/stargazers"><img src="https://img.shields.io/github/stars/frs0n/GestaltEdit?style=flat-square&color=6E56CF" alt="Stars"></a>
   <img src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-27-000000?style=flat-square&logo=apple&logoColor=white" alt="Platform">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Noncommercial-6E56CF?style=flat-square" alt="PolyForm Noncommercial License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-6E56CF?style=flat-square" alt="GPL-3.0-or-later"></a>
 </p>
 
 <a href="https://github.com/frs0n/GestaltEdit/releases/latest"><b>Download IPA</b></a> ·
@@ -42,7 +42,7 @@ Edit `com.apple.MobileGestalt.plist` on-device. Capability presets, a full field
 
 ## Requirements
 
-- iOS / iPadOS 27 beta 1–4
+- iOS / iPadOS 26.0 or later
 - Developer Mode enabled
 - A signing tool such as [iLoader](https://github.com/nab138/iloader)
 
@@ -55,11 +55,13 @@ Edit `com.apple.MobileGestalt.plist` on-device. Capability presets, a full field
 ## Credits
 
 - [Nugget](https://github.com/leminlimez/Nugget) — presets and iPadOS support
-- [FilzaSlop](https://github.com/0xjohnnydev/FilzaSlop), [bad_query](https://github.com/forcequitOS/bad_query), [0xJohnny](https://x.com/0xjohnny) — file access research
+- [FilzaSlop](https://github.com/0xjohnnydev/FilzaSlop), [worse_query](https://github.com/forcequitOS/worse_query), [0xJohnny](https://x.com/0xjohnny) — file access research
 - [neospring](https://github.com/rooootdev/neospring) — respring implementation
 
 Not affiliated with Apple or the projects above.
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE) — free for noncommercial use; commercial use is not permitted.
+[GNU General Public License v3.0 or later](LICENSE).
+
+The signing team must provision the App Group `group.<bundle identifier>.worsequery`. The integrated worse_query code retains its original copyright and license notices.

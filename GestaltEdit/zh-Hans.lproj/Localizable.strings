@@ -157,3 +157,7 @@
 "Failed to open the plist (errno=%d)." = "打开 plist 失败（errno=%d）。";
 "Failed to write the plist (errno=%d)." = "写入 plist 失败（errno=%d）。";
 "Post-write verification failed." = "写入后验证失败。";
+
+"worse_query App Group is not configured." = "未配置 worse_query App Group。";
+"worse_query failed (code %lld). Check the App Group signing configuration." = "worse_query 失败（代码 %lld）。请检查 App Group 签名配置。";
+"worse_query acquired a sandbox extension, but the MobileGestalt plist is not writable." = "worse_query 已取得沙盒扩展，但 MobileGestalt plist 仍不可写。";

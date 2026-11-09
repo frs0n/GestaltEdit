@@ -79,7 +79,7 @@ private struct TweakWorkbench: View {
                     }
                 }
             }
-            .navigationTitle("MobileGestalt")
+            .navigationTitle("GestaltEdit")
             .navigationBarTitleDisplayMode(.large)
             .refreshable { viewModel.load() }
             .safeAreaInset(edge: .bottom) {

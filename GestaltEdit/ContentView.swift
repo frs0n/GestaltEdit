@@ -243,25 +243,44 @@ private struct PlacardPromotionLink: View {
 
 private struct DeveloperFooter: View {
     private let douyinURL = URL(string: "https://v.douyin.com/hHHMAlF5bE0/")!
+    private let xURL = URL(string: "https://x.com/Frs0n_")!
+    private let githubURL = URL(string: "https://github.com/frs0n")!
 
     var body: some View {
-        Link(destination: douyinURL) {
-            HStack(spacing: 12) {
-                avatarImage
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
+        HStack(spacing: 12) {
+            avatarImage
+                .resizable()
+                .scaledToFill()
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
 
-                Text("SUSS")
-                    .font(.subheadline.weight(.medium))
+            Text("SUSS")
+                .font(.subheadline.weight(.medium))
 
-                Spacer()
+            Spacer(minLength: 0)
+
+            HStack(spacing: 0) {
+                socialLink("Douyin", label: "抖音", destination: douyinURL)
+                socialLink("X", label: "X", destination: xURL)
+                socialLink("GitHub", label: "GitHub", destination: githubURL)
             }
-            .frame(minHeight: 40)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("开发者 SUSS，点击打开抖音")
+        .frame(minHeight: 44)
+    }
+
+    private func socialLink(_ image: String, label: String, destination: URL) -> some View {
+        Link(destination: destination) {
+            Image(image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .accessibilityLabel("SUSS · \(label)")
     }
 
     private var avatarImage: Image {

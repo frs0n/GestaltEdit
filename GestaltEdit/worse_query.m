@@ -41,18 +41,14 @@ typedef char *(*container_copy_sandbox_token_fn)(void *);
 typedef int64_t (*sandbox_extension_consume_fn)(const char *);
 typedef int (*sandbox_extension_release_fn)(int64_t);
 
-// Remove symlink and recreate Caches directory
-static void clean_symlink(NSString *group) {
-    if (group != NULL) {
-        NSFileManager *files = [NSFileManager defaultManager];
-        NSURL *groupRoot = [files containerURLForSecurityApplicationGroupIdentifier: group];
-        if (groupRoot) {
-            NSURL *caches = [groupRoot URLByAppendingPathComponent: @"Library/Caches"];
-            [files removeItemAtURL: caches error: nil];
-            [files createDirectoryAtURL: caches withIntermediateDirectories: false attributes: nil error: nil];
-        }
+// Remove only the symlink created by this query, and never remove a directory.
+static void clean_symlink(NSString *caches, NSString *target) {
+    NSFileManager *files = [NSFileManager defaultManager];
+    NSString *destination = [files destinationOfSymbolicLinkAtPath:caches error:nil];
+    if (![destination isEqualToString:target]) return;
+    if ([files removeItemAtPath:caches error:nil]) {
+        [files createDirectoryAtPath:caches withIntermediateDirectories:NO attributes:nil error:nil];
     }
-    return;
 }
 
 // So, who's ready for round two?
@@ -112,8 +108,9 @@ int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool crea
     // Never remove existing files or a pre-existing symlink.
     NSDictionary *attributes = [files attributesOfItemAtPath:caches error:nil];
     if (attributes) {
+        NSArray *contents = [files contentsOfDirectoryAtPath:caches error:nil];
         if (![attributes[NSFileType] isEqualToString:NSFileTypeDirectory] ||
-            [files contentsOfDirectoryAtPath:caches error:nil].count != 0 ||
+            !contents || contents.count != 0 ||
             ![files removeItemAtPath:caches error:nil]) {
             query_free(query);
             dlclose(mgr);
@@ -123,7 +120,7 @@ int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool crea
     if (![files createSymbolicLinkAtPath:caches withDestinationPath:target error:nil]) {
         query_free(query);
         dlclose(mgr);
-        clean_symlink(group);
+        [files createDirectoryAtPath:caches withIntermediateDirectories:NO attributes:nil error:nil];
         return -4;
     }
 
@@ -132,14 +129,14 @@ int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool crea
     if (!result) {
         query_free(query);
         dlclose(mgr);
-        clean_symlink(group);
+        clean_symlink(caches, target);
         return -5; // Query rejected by containermanagerd
     }
     char *token = copy_sandbox_token(result);
     if (!token) {
         query_free(query);
         dlclose(mgr);
-        clean_symlink(group);
+        clean_symlink(caches, target);
         return -6; // Kernel refused to issue a sandbox extension
     }
 
@@ -148,7 +145,7 @@ int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool crea
     query_free(query);
     free(token);
     dlclose(mgr);
-    clean_symlink(group);
+    clean_symlink(caches, target);
 
     return handle;
 }

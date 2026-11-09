@@ -6,6 +6,7 @@
 
 #import "GestaltAccess.h"
 #import "worse_query.h"
+#import "GestaltAppGroupResolver.h"
 
 #import <errno.h>
 #import <fcntl.h>
@@ -84,15 +85,12 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
     self.isConnected = NO;
     self.plistPath = nil;
 
-    NSString *target = [kWorseQueryMobileGestaltCacheDirectory
-        stringByAppendingPathComponent:kGestaltPlistFileName];
+    NSString *target = kWorseQueryMobileGestaltCacheDirectory;
     NSString *plist = [kMobileGestaltCacheDirectory
         stringByAppendingPathComponent:kGestaltPlistFileName];
-    NSString *bundleIdentifier = NSBundle.mainBundle.bundleIdentifier;
-    NSString *group = bundleIdentifier.length ?
-        [NSString stringWithFormat:@"group.%@.worsequery", bundleIdentifier] : nil;
+    NSString *group = [GestaltAppGroupResolver usableAppGroup];
     if (![group isKindOfClass:NSString.class] || group.length == 0) {
-        if (error) *error = GestaltError(1, NSLocalizedString(@"worse_query App Group is not configured.", nil));
+        if (error) *error = GestaltError(1, NSLocalizedString(@"No usable App Group was found in the app signature. Sign with a provisioning profile that includes an App Group.", nil));
         return NO;
     }
     int64_t handle = worse_query(target, group, false, false);

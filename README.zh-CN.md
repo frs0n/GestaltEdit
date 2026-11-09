@@ -63,5 +63,3 @@
 ## 许可证
 
 [GNU 通用公共许可证第 3 版或更高版本](LICENSE)。
-
-签名团队须配置 App Group `group.<bundle identifier>.worsequery`。集成的 worse_query 代码保留原作者的版权和许可声明。

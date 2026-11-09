@@ -63,5 +63,3 @@ Not affiliated with Apple or the projects above.
 ## License
 
 [GNU General Public License v3.0 or later](LICENSE).
-
-The signing team must provision the App Group `group.<bundle identifier>.worsequery`. The integrated worse_query code retains its original copyright and license notices.

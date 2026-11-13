@@ -136,10 +136,14 @@ struct AIRegionConfiguration: Equatable {
     let spoofedProductType: String?
     let spoofedHardwareModel: String?
     let spoofedCPUModel: String?
+    var enablesSiriMode = false
 
     var requiresDeviceSpoofing: Bool { spoofedProductType != nil }
 
-    static func resolve(for plist: GestaltPlist) -> AIRegionConfiguration {
+    static func resolve(
+        for plist: GestaltPlist,
+        osMajorVersion: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+    ) -> AIRegionConfiguration {
         if let profile = AIRegionProfile(plist: plist) {
             return AIRegionConfiguration(
                 profile: profile,
@@ -149,21 +153,26 @@ struct AIRegionConfiguration: Equatable {
             )
         }
 
+        // iOS/iPadOS 27 still needs the US region configuration and SiriMode,
+        // but no longer needs product, hardware or CPU identity spoofing.
+        let spoofsIdentity = osMajorVersion != 27
         let productType = AIRegionProfile.detectedProductType(in: plist)
         if productType.hasPrefix("iPad") {
             return AIRegionConfiguration(
                 profile: AIRegionProfile(marketingName: "iPad mini (A17 Pro)", regulatoryModel: "A2993"),
-                spoofedProductType: "iPad16,1",
-                spoofedHardwareModel: "J410AP",
-                spoofedCPUModel: "t8130"
+                spoofedProductType: spoofsIdentity ? "iPad16,1" : nil,
+                spoofedHardwareModel: spoofsIdentity ? "J410AP" : nil,
+                spoofedCPUModel: spoofsIdentity ? "t8130" : nil,
+                enablesSiriMode: true
             )
         }
 
         return AIRegionConfiguration(
             profile: AIRegionProfile(marketingName: "iPhone 15 Pro", regulatoryModel: "A2848"),
-            spoofedProductType: "iPhone16,1",
-            spoofedHardwareModel: "D83AP",
-            spoofedCPUModel: "t8130"
+            spoofedProductType: spoofsIdentity ? "iPhone16,1" : nil,
+            spoofedHardwareModel: spoofsIdentity ? "D83AP" : nil,
+            spoofedCPUModel: spoofsIdentity ? "t8130" : nil,
+            enablesSiriMode: true
         )
     }
 }

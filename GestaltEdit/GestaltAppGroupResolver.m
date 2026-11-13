@@ -148,6 +148,11 @@ static NSArray *ExecutableGroups(void)
 @implementation GestaltAppGroupResolver
 + (NSString *)usableAppGroup
 {
+    return [self usableAppGroups].firstObject;
+}
+
++ (NSArray<NSString *> *)usableAppGroups
+{
     NSArray *groups = ProcessGroups();
     if (!groups) groups = ExecutableGroups();
     NSMutableOrderedSet *candidates = [NSMutableOrderedSet orderedSet];
@@ -158,10 +163,11 @@ static NSArray *ExecutableGroups(void)
         if ([group isKindOfClass:NSString.class] && [group hasPrefix:@"group."])
             [candidates addObject:group];
     }
+    NSMutableArray<NSString *> *usable = [NSMutableArray array];
     for (NSString *group in candidates) {
         if ([NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:group])
-            return group;
+            [usable addObject:group];
     }
-    return nil;
+    return usable;
 }
 @end

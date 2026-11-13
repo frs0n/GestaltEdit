@@ -30,6 +30,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// Negative results: -1 group unavailable, -2 missing APIs, -3 query allocation,
+// -4 cache setup, -5 query rejected, -6 no token, -7 token activation,
+// -8 cache restoration (original contents retained), -255 target unavailable.
+// errno describes filesystem failures and failed token activation.
 int64_t worse_query(NSString *path, NSString *group, bool alt_flags, bool create_dir);
 void worse_query_release(int64_t handle);
 

@@ -163,3 +163,15 @@
 "worse_query acquired a sandbox extension, but the MobileGestalt plist is not writable." = "worse_query 已取得沙盒扩展，但 MobileGestalt plist 仍不可写。";
 
 "No usable App Group was found in the app signature. Sign with a provisioning profile that includes an App Group." = "应用签名中没有可用的 App Group。请使用包含 App Group 权限的描述文件签名。";
+
+"The signed App Group container is unavailable." = "签名中的 App Group 容器不可用。";
+"Required system access APIs are unavailable." = "所需的系统访问 API 不可用。";
+"The system access query could not be created." = "无法创建系统访问查询。";
+"The App Group cache could not be prepared." = "无法准备 App Group 缓存目录。";
+"The system rejected the container query." = "系统拒绝了容器查询。";
+"The system did not issue an access token." = "系统未签发访问令牌。";
+"The access token could not be activated." = "无法激活访问令牌。";
+"The App Group cache could not be restored. Its original contents have been preserved." = "无法恢复 App Group 缓存目录，原有内容已保留。";
+"The access token did not allow reading and writing MobileGestalt." = "访问令牌未提供 MobileGestalt 读写权限。";
+"The MobileGestalt cache directory is unavailable." = "MobileGestalt 缓存目录不可用。";
+"System access failed." = "系统访问失败。";

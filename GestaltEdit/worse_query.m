@@ -29,6 +29,8 @@
 #include <xpc/xpc.h>
 #include <sys/stat.h>
 #include "worse_query.h"
+#import "GestaltCacheLease.h"
+#include <errno.h>
 
 typedef void *(*container_query_create_fn)(void);
 typedef void (*container_query_set_class_fn)(void *, uint64_t);
@@ -40,16 +42,6 @@ typedef void (*container_query_free_fn)(void *);
 typedef char *(*container_copy_sandbox_token_fn)(void *);
 typedef int64_t (*sandbox_extension_consume_fn)(const char *);
 typedef int (*sandbox_extension_release_fn)(int64_t);
-
-// Remove only the symlink created by this query, and never remove a directory.
-static void clean_symlink(NSString *caches, NSString *target) {
-    NSFileManager *files = [NSFileManager defaultManager];
-    NSString *destination = [files destinationOfSymbolicLinkAtPath:caches error:nil];
-    if (![destination isEqualToString:target]) return;
-    if ([files removeItemAtPath:caches error:nil]) {
-        [files createDirectoryAtPath:caches withIntermediateDirectories:NO attributes:nil error:nil];
-    }
-}
 
 // So, who's ready for round two?
 int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool create_dir) {
@@ -64,7 +56,6 @@ int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool crea
     NSFileManager *files = [NSFileManager defaultManager];
     NSURL *groupRoot = [files containerURLForSecurityApplicationGroupIdentifier: group];
     if (!groupRoot) return -1; // App Group doesn't exist or we can't access it
-    NSString *caches = [[groupRoot URLByAppendingPathComponent: @"Library/Caches"] path];
 
     // Resolve functions
     void *mgr = dlopen("/usr/lib/system/libsystem_containermanager.dylib", RTLD_NOW | RTLD_LOCAL);
@@ -103,50 +94,33 @@ int64_t worse_query(NSString *target, NSString *group, bool alt_flags, bool crea
         query_set_flags(query, 0x0000008000000000ULL);
     }
 
-    // Set up symlink
-    // Only replace an empty cache directory belonging to this dedicated group.
-    // Never remove existing files or a pre-existing symlink.
-    NSDictionary *attributes = [files attributesOfItemAtPath:caches error:nil];
-    if (attributes) {
-        NSArray *contents = [files contentsOfDirectoryAtPath:caches error:nil];
-        if (![attributes[NSFileType] isEqualToString:NSFileTypeDirectory] ||
-            !contents || contents.count != 0 ||
-            ![files removeItemAtPath:caches error:nil]) {
-            query_free(query);
-            dlclose(mgr);
-            return -4;
-        }
-    }
-    if (![files createSymbolicLinkAtPath:caches withDestinationPath:target error:nil]) {
+    int64_t handle = -4;
+    __block int consumeErrno = 0;
+    NSError *cacheError = nil;
+    BOOL restored = NO;
+    @try {
+        restored = GestaltWithCacheLink(groupRoot, target, ^int64_t {
+            void *result = query_get_single_result(query);
+            if (!result) return -5;
+            char *token = copy_sandbox_token(result);
+            if (!token) return -6;
+            errno = 0;
+            int64_t consumed = consume_extension(token);
+            consumeErrno = errno;
+            free(token);
+            return consumed < 0 ? -7 : consumed;
+        }, &handle, &cacheError);
+    } @finally {
         query_free(query);
         dlclose(mgr);
-        [files createDirectoryAtPath:caches withIntermediateDirectories:NO attributes:nil error:nil];
-        return -4;
+    }
+    if (!restored) {
+        if (handle >= 0) worse_query_release(handle);
+        errno = (int)cacheError.code;
+        return [cacheError.userInfo[@"GestaltCacheRestorationFailed"] boolValue] ? -8 : -4;
     }
 
-    // Send our query over
-    void *result = query_get_single_result(query);
-    if (!result) {
-        query_free(query);
-        dlclose(mgr);
-        clean_symlink(caches, target);
-        return -5; // Query rejected by containermanagerd
-    }
-    char *token = copy_sandbox_token(result);
-    if (!token) {
-        query_free(query);
-        dlclose(mgr);
-        clean_symlink(caches, target);
-        return -6; // Kernel refused to issue a sandbox extension
-    }
-
-    // Consume sandbox extension and clean up
-    int64_t handle = consume_extension(token);
-    query_free(query);
-    free(token);
-    dlclose(mgr);
-    clean_symlink(caches, target);
-
+    errno = handle == -7 ? consumeErrno : 0;
     return handle;
 }
 

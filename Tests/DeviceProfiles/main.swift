@@ -50,9 +50,21 @@ checkNative([productKey: "iPad16,9"], name: "iPad Air 11-inch (M4)", model: "A34
 for identifier in ["iPhone15,4", "iPhone99,1", "iPad15,7", "iPad99,1"] {
     let plist = GestaltPlist(dict: ["CacheExtra": [productKey: identifier]])
     precondition(AIRegionProfile(plist: plist) == nil)
-    let configuration = AIRegionConfiguration.resolve(for: plist)
+    let configuration = AIRegionConfiguration.resolve(for: plist, osMajorVersion: 26)
     precondition(configuration.requiresDeviceSpoofing)
     precondition(configuration.spoofedProductType == (identifier.hasPrefix("iPad") ? "iPad16,1" : "iPhone16,1"))
 }
 
 print("Passed: 9 new identifiers, suffixes, name fallbacks, identity precedence, existing devices and unsupported-device routing.")
+
+for identifier in ["iPhone15,4", "iPad15,7"] {
+    let plist = GestaltPlist(dict: ["CacheExtra": [productKey: identifier]])
+    let configuration = AIRegionConfiguration.resolve(for: plist, osMajorVersion: 27)
+    precondition(configuration.enablesSiriMode)
+    precondition(!configuration.requiresDeviceSpoofing)
+    precondition(configuration.spoofedProductType == nil)
+    precondition(configuration.spoofedHardwareModel == nil)
+    precondition(configuration.spoofedCPUModel == nil)
+    precondition(configuration.profile.regulatoryModel == (identifier.hasPrefix("iPad") ? "A2993" : "A2848"))
+}
+print("Passed: iOS 27 unsupported devices keep US region profiles and SiriMode without identity spoofing.")

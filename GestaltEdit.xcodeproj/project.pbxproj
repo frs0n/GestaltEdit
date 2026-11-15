@@ -7,11 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AABB00000000000000000004 /* GestaltWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AABB00000000000000000001 /* GestaltWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AABB0000000000000000001F /* GestaltEdit/GestaltAccess.m in Sources */ = {isa = PBXBuildFile; fileRef = AABB0000000000000000001E /* GestaltEdit/GestaltAccess.m */; };
+		AABB00000000000000000021 /* GestaltEdit/worse_query.m in Sources */ = {isa = PBXBuildFile; fileRef = AABB00000000000000000020 /* GestaltEdit/worse_query.m */; };
+		AABB00000000000000000023 /* GestaltEdit/GestaltCacheLease.m in Sources */ = {isa = PBXBuildFile; fileRef = AABB00000000000000000022 /* GestaltEdit/GestaltCacheLease.m */; };
+		AABB00000000000000000025 /* GestaltEdit/GestaltAppGroupResolver.m in Sources */ = {isa = PBXBuildFile; fileRef = AABB00000000000000000024 /* GestaltEdit/GestaltAppGroupResolver.m */; };
+		AABB00000000000000000027 /* GestaltEdit/GestaltBackupStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB00000000000000000026 /* GestaltEdit/GestaltBackupStore.swift */; };
+		AABB00000000000000000040 /* icon.icon in Watch Resources */ = {isa = PBXBuildFile; fileRef = D13AF45A302AF55100CE898D /* icon.icon */; };
 		D13AF45B302AF55100CE898D /* icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D13AF45A302AF55100CE898D /* icon.icon */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		AABB00000000000000000006 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AABB0000000000000000000A;
+			remoteInfo = GestaltWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AABB00000000000000000005 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolder = Product;
+			files = (
+				AABB00000000000000000004 /* GestaltWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* GestaltEdit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GestaltEdit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AABB00000000000000000001 /* GestaltWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GestaltWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AABB0000000000000000001E /* GestaltEdit/GestaltAccess.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GestaltEdit/GestaltAccess.m; sourceTree = SOURCE_ROOT; };
+		AABB00000000000000000020 /* GestaltEdit/worse_query.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GestaltEdit/worse_query.m; sourceTree = SOURCE_ROOT; };
+		AABB00000000000000000022 /* GestaltEdit/GestaltCacheLease.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GestaltEdit/GestaltCacheLease.m; sourceTree = SOURCE_ROOT; };
+		AABB00000000000000000024 /* GestaltEdit/GestaltAppGroupResolver.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GestaltEdit/GestaltAppGroupResolver.m; sourceTree = SOURCE_ROOT; };
+		AABB00000000000000000026 /* GestaltEdit/GestaltBackupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestaltEdit/GestaltBackupStore.swift; sourceTree = SOURCE_ROOT; };
 		D13AF45A302AF55100CE898D /* icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = icon.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -21,10 +56,25 @@
 			path = GestaltEdit;
 			sourceTree = "<group>";
 		};
+		AABB00000000000000000002 /* GestaltWatch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GestaltWatch;
+			sourceTree = "<group>";
+		};
+		AABB00000000000000000003 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		000000000000000130000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		AABB0000000000000000000C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -37,7 +87,10 @@
 			children = (
 				D13AF45A302AF55100CE898D /* icon.icon */,
 				000000000000000000000010 /* GestaltEdit */,
+				AABB00000000000000000002 /* GestaltWatch */,
+				AABB00000000000000000003 /* Shared */,
 				000000000000000000000020 /* Products */,
+				D1127A7C30A9EC1D004CBF8F /* Watch Shared Sources */,
 			);
 			sourceTree = "<group>";
 		};
@@ -45,8 +98,21 @@
 			isa = PBXGroup;
 			children = (
 				000000000000000000000120 /* GestaltEdit.app */,
+				AABB00000000000000000001 /* GestaltWatch.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D1127A7C30A9EC1D004CBF8F /* Watch Shared Sources */ = {
+			isa = PBXGroup;
+			children = (
+				AABB0000000000000000001E /* GestaltEdit/GestaltAccess.m */,
+				AABB00000000000000000020 /* GestaltEdit/worse_query.m */,
+				AABB00000000000000000022 /* GestaltEdit/GestaltCacheLease.m */,
+				AABB00000000000000000024 /* GestaltEdit/GestaltAppGroupResolver.m */,
+				AABB00000000000000000026 /* GestaltEdit/GestaltBackupStore.swift */,
+			);
+			name = "Watch Shared Sources";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -59,15 +125,39 @@
 				000000000000000120000000 /* Sources */,
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
+				AABB00000000000000000005 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
+			dependencies = (
+				AABB00000000000000000007 /* PBXTargetDependency */,
+			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* GestaltEdit */,
+				AABB00000000000000000003 /* Shared */,
 			);
 			name = GestaltEdit;
 			productName = MyApp;
 			productReference = 000000000000000000000120 /* GestaltEdit.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AABB0000000000000000000A /* GestaltWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AABB0000000000000000000E /* Build configuration list for PBXNativeTarget "GestaltWatch" */;
+			buildPhases = (
+				AABB0000000000000000000B /* Sources */,
+				AABB0000000000000000000C /* Frameworks */,
+				AABB0000000000000000000D /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				AABB00000000000000000002 /* GestaltWatch */,
+				AABB00000000000000000003 /* Shared */,
+			);
+			name = GestaltWatch;
+			productName = GestaltWatch;
+			productReference = AABB00000000000000000001 /* GestaltWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -101,6 +191,7 @@
 			projectRoot = "";
 			targets = (
 				000000000000000100000000 /* GestaltEdit */,
+				AABB0000000000000000000A /* GestaltWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -112,6 +203,12 @@
 				D13AF45B302AF55100CE898D /* icon.icon in Resources */,
 			);
 		};
+		AABB0000000000000000000D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+                AABB00000000000000000040 /* icon.icon in Watch Resources */,
+			);
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -120,7 +217,25 @@
 			files = (
 			);
 		};
+		AABB0000000000000000000B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				AABB0000000000000000001F /* GestaltEdit/GestaltAccess.m in Sources */,
+				AABB00000000000000000021 /* GestaltEdit/worse_query.m in Sources */,
+				AABB00000000000000000023 /* GestaltEdit/GestaltCacheLease.m in Sources */,
+				AABB00000000000000000025 /* GestaltEdit/GestaltAppGroupResolver.m in Sources */,
+				AABB00000000000000000027 /* GestaltEdit/GestaltBackupStore.swift in Sources */,
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AABB00000000000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AABB0000000000000000000A /* GestaltWatch */;
+			targetProxy = AABB00000000000000000006 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		000000000000000011000000 /* Debug configuration for PBXProject "GestaltEdit" */ = {
@@ -176,6 +291,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GESTALT_COMPANION_BUNDLE_IDENTIFIER = me.ssus.gestaltedit;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -235,6 +351,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GESTALT_COMPANION_BUNDLE_IDENTIFIER = me.ssus.gestaltedit;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -270,7 +387,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 2.1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = me.ssus.gestaltedit;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GESTALT_COMPANION_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -310,7 +427,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 2.1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = me.ssus.gestaltedit;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GESTALT_COMPANION_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -322,6 +439,66 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AABB0000000000000000000F /* Debug configuration for PBXNativeTarget "GestaltWatch" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GestaltEdit/GestaltEdit.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "GestaltEdit Helper";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(GESTALT_COMPANION_BUNDLE_IDENTIFIER)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = icon;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 2.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GESTALT_COMPANION_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_OBJC_BRIDGING_HEADER = "GestaltEdit/GestaltEdit-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		AABB00000000000000000010 /* Release configuration for PBXNativeTarget "GestaltWatch" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = GestaltEdit/GestaltEdit.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "GestaltEdit Helper";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(GESTALT_COMPANION_BUNDLE_IDENTIFIER)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = icon;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 2.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(GESTALT_COMPANION_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_OBJC_BRIDGING_HEADER = "GestaltEdit/GestaltEdit-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -341,6 +518,14 @@
 			buildConfigurations = (
 				000000000000000111000000 /* Debug configuration for PBXNativeTarget "GestaltEdit" */,
 				000000000000000112000000 /* Release configuration for PBXNativeTarget "GestaltEdit" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		AABB0000000000000000000E /* Build configuration list for PBXNativeTarget "GestaltWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AABB0000000000000000000F /* Debug configuration for PBXNativeTarget "GestaltWatch" */,
+				AABB00000000000000000010 /* Release configuration for PBXNativeTarget "GestaltWatch" */,
 			);
 			defaultConfigurationName = Release;
 		};

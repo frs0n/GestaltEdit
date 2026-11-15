@@ -10,8 +10,8 @@ struct GestaltBackup: Identifiable, Hashable {
 }
 
 enum GestaltBackupStore {
-    static func create(from data: Data) throws -> GestaltBackup {
-        let directory = try backupDirectory()
+    static func create(from data: Data, deviceID: String? = nil) throws -> GestaltBackup {
+        let directory = try backupDirectory(deviceID: deviceID)
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss-SSS"
@@ -22,8 +22,8 @@ enum GestaltBackupStore {
         return try metadata(for: url)
     }
 
-    static func list() throws -> [GestaltBackup] {
-        let directory = try backupDirectory()
+    static func list(deviceID: String? = nil) throws -> [GestaltBackup] {
+        let directory = try backupDirectory(deviceID: deviceID)
         return try FileManager.default.contentsOfDirectory(
             at: directory,
             includingPropertiesForKeys: [.creationDateKey, .fileSizeKey],
@@ -42,14 +42,25 @@ enum GestaltBackupStore {
         try FileManager.default.removeItem(at: backup.url)
     }
 
-    private static func backupDirectory() throws -> URL {
+    private static func backupDirectory(deviceID: String?) throws -> URL {
         let documents = try FileManager.default.url(
             for: .documentDirectory,
             in: .userDomainMask,
             appropriateFor: nil,
             create: true
         )
-        let directory = documents.appendingPathComponent("MobileGestalt Backups", isDirectory: true)
+        let root = documents.appendingPathComponent("MobileGestalt Backups", isDirectory: true)
+        // UUIDs come from the helper; never use an arbitrary remote path component.
+        let directory: URL
+        if let deviceID {
+            guard let uuid = UUID(uuidString: deviceID) else {
+                throw NSError(domain: "GestaltEdit.Backups", code: 1,
+                              userInfo: [NSLocalizedDescriptionKey: String(localized: "Invalid Apple Watch identifier.")])
+            }
+            directory = root.appendingPathComponent("AppleWatch-\(uuid.uuidString)", isDirectory: true)
+        } else {
+            directory = root
+        }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory
     }

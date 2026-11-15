@@ -52,6 +52,19 @@ Edit `com.apple.MobileGestalt.plist` on-device. Capability presets, a full field
 2. Install [iLoader](https://iloader.app/), connect your device, and sign in with your Apple ID (used only for local signing).
 3. Import the IPA to sign and install it, then trust the certificate under Settings → General → VPN & Device Management.
 
+## Apple Watch helper
+
+Expand the connection row at the top of Tools and select the active Apple Watch paired with this iPhone. The Watch app only handles MG access: presets, field editing, backup, import/export, and restore stay on the iPhone. Backups are separated by watch and from iPhone backups. Writes back up the original on both devices and verify the saved file. Presets still depend on the target platform; writing an iPhone/iPad capability does not add that feature to watchOS.
+
+1. Install an IPA containing both the iPhone app and `Watch/GestaltWatch.app`. Sign both apps and their respective App Groups.
+2. Tap **Install Watch Helper** in the device selector and follow the instructions to install GestaltEdit from **Available Apps** in the system Watch app. If a signing tool strips Watch content, use a tool that preserves it or install the **GestaltWatch** target directly with Xcode.
+3. Open GestaltEdit Helper on the watch and keep it in the foreground nearby. Select Apple Watch in the iPhone app. No MG editing or approval is required on the watch.
+4. After applying changes or restoring a backup, restart Apple Watch manually. The iPhone does not respring for Watch writes.
+
+The build deployment target is watchOS 26.0. Actual system access depends on the watchOS version and signing; device compatibility has not been verified. With multiple paired watches, the app uses the system's active watch; switch watches in the system Watch app.
+
+Design reference: [HermesEnabler](https://github.com/pookjw/HermesEnabler)'s iPhone/Watch companion structure. MG access reuses GestaltEdit's own implementation.
+
 ## Credits
 
 - [Nugget](https://github.com/leminlimez/Nugget) — presets and iPadOS support

@@ -16,6 +16,51 @@ final class GestaltViewModel: ObservableObject {
     @Published var stagesAIRegion = false
     @Published private(set) var isRespringing = false
 
+    enum Device: Hashable { case iPhone, appleWatch }
+    @Published private(set) var selectedDevice: Device = .iPhone
+    let watch = WatchConnection()
+    private var watchDeviceID: String?
+    private var watchSnapshot: Data?
+    private var watchGeneration = 0
+    private var watchSubscription: AnyCancellable?
+
+    init() {
+        watchSubscription = watch.$pairingGeneration.dropFirst().sink { [weak self] _ in
+            guard let self, self.selectedDevice == .appleWatch else { return }
+            self.watchGeneration += 1
+            self.clearStagedChanges()
+            self.isDirty = false
+            self.plist = nil
+            self.watchSnapshot = nil
+            self.watchDeviceID = nil
+            self.backups = []
+        }
+    }
+
+    func selectDevice(_ device: Device) {
+        guard !isBusy, device != selectedDevice else { return }
+        selectedDevice = device
+        plist = nil
+        isDirty = false
+        clearStagedChanges()
+        watchSnapshot = nil
+        watchDeviceID = nil
+        backups = []
+        load()
+    }
+
+    var deviceContextID: String {
+        selectedDevice == .iPhone ? "iPhone" : "AppleWatch-\(watchGeneration)-\(watchDeviceID ?? "unavailable")"
+    }
+
+    private func clearStagedChanges() {
+        selectedTweaks.removeAll()
+        dynamicIslandSubtype = nil
+        changesModelName = false
+        modelName = ""
+        stagesAIRegion = false
+    }
+
     private let access = GestaltAccess.shared()
 
     var aiRegionProfile: AIRegionProfile? {
@@ -54,6 +99,7 @@ final class GestaltViewModel: ObservableObject {
     func load() {
         guard !isBusy else { return }
         hasAttemptedLoad = true
+        if selectedDevice == .appleWatch { loadWatch(); return }
         isBusy = true
         notice = nil
 
@@ -149,6 +195,7 @@ final class GestaltViewModel: ObservableObject {
 
     func createBackup() {
         guard !isBusy else { return }
+        if selectedDevice == .appleWatch { backupWatch(); return }
         isBusy = true
         defer { isBusy = false }
         do {
@@ -173,6 +220,10 @@ final class GestaltViewModel: ObservableObject {
         isBusy = true
         defer { isBusy = false }
 
+        guard selectedDevice != .appleWatch || watchDeviceID != nil else {
+            report(WatchMGWire.failure(String(localized: "Reload Apple Watch before saving.")))
+            return
+        }
         let accessed = url.startAccessingSecurityScopedResource()
         defer {
             if accessed { url.stopAccessingSecurityScopedResource() }
@@ -189,7 +240,7 @@ final class GestaltViewModel: ObservableObject {
                   dictionary["CacheExtra"] is [String: Any] else {
                 throw GestaltEditError.invalidBackup
             }
-            let backup = try GestaltBackupStore.create(from: data)
+            let backup = try GestaltBackupStore.create(from: data, deviceID: selectedDevice == .appleWatch ? watchDeviceID : nil)
             refreshBackups()
             notice = GestaltNotice(
                 kind: .backupCreated,
@@ -233,7 +284,8 @@ final class GestaltViewModel: ObservableObject {
 
     func refreshBackups() {
         do {
-            backups = try GestaltBackupStore.list()
+            if selectedDevice == .appleWatch && watchDeviceID == nil { backups = []; return }
+            backups = try GestaltBackupStore.list(deviceID: selectedDevice == .appleWatch ? watchDeviceID : nil)
         } catch {
             report(error)
         }
@@ -244,6 +296,10 @@ final class GestaltViewModel: ObservableObject {
         expectedAIRegion: AIRegionConfiguration?,
         completion: (() -> Void)? = nil
     ) {
+        if selectedDevice == .appleWatch {
+            saveWatch(pendingPlist, completion: completion)
+            return
+        }
         isBusy = true
         notice = nil
 
@@ -288,6 +344,80 @@ final class GestaltViewModel: ObservableObject {
             isDirty = true
             report(error)
             isBusy = false
+        }
+    }
+
+    private func loadWatch() {
+        isBusy = true
+        notice = nil
+        let generation = watchGeneration
+        Task {
+            defer { isBusy = false }
+            do {
+                let id = try await watch.identify()
+                let data = try await watch.read(deviceID: id)
+                guard generation == watchGeneration else { return }
+                if watchDeviceID != id { clearStagedChanges() }
+                watchDeviceID = id
+                watchSnapshot = data
+                plist = GestaltPlist(dict: try WatchMGWire.decode(data))
+                isDirty = false
+                refreshBackups()
+            } catch {
+                plist = nil
+                watchSnapshot = nil
+                report(error)
+            }
+        }
+    }
+
+    private func backupWatch() {
+        guard let id = watchDeviceID else { return }
+        isBusy = true
+        Task {
+            defer { isBusy = false }
+            do {
+                let data = try await watch.read(deviceID: id)
+                _ = try GestaltBackupStore.create(from: data, deviceID: id)
+                refreshBackups()
+                notice = GestaltNotice(kind: .backupCreated, message: String(localized: "Apple Watch backup saved on this iPhone."))
+            } catch { report(error) }
+        }
+    }
+
+    private func saveWatch(_ pending: GestaltPlist, completion: (() -> Void)?) {
+        guard let id = watchDeviceID, let snapshot = watchSnapshot else {
+            report(WatchMGWire.failure(String(localized: "Reload Apple Watch before saving.")))
+            return
+        }
+        isBusy = true
+        notice = nil
+        let generation = watchGeneration
+        Task {
+            defer { isBusy = false }
+            do {
+                let data = try PropertyListSerialization.data(fromPropertyList: pending.dict, format: .binary, options: 0)
+                _ = try GestaltBackupStore.create(from: snapshot, deviceID: id)
+                try await watch.write(data, deviceID: id, expectedHash: WatchMGWire.digest(snapshot))
+                guard generation == watchGeneration else { return }
+                let verified = try await watch.read(deviceID: id)
+                let dictionary = try WatchMGWire.decode(verified)
+                guard NSDictionary(dictionary: dictionary).isEqual(to: pending.dict) else {
+                    throw GestaltEditError.verificationFailed
+                }
+                plist = GestaltPlist(dict: dictionary)
+                watchSnapshot = verified
+                isDirty = false
+                completion?()
+                refreshBackups()
+                notice = GestaltNotice(kind: .saved, message: String(localized: "Saved to Apple Watch and verified. Restart your Apple Watch to apply changes."))
+            } catch {
+                // A timeout can occur after commit. Force a fresh read before any retry.
+                watchSnapshot = nil
+                isDirty = true
+                refreshBackups()
+                report(error)
+            }
         }
     }
 

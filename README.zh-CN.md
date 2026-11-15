@@ -52,6 +52,19 @@
 2. 安装 [iLoader](https://iloader.app/)，连接设备并登录 Apple ID（仅用于本地签名）。
 3. 导入 IPA 完成签名安装，然后在「设置」→「通用」→「VPN 与设备管理」中信任证书。
 
+## Apple Watch 助手
+
+在 Tools 顶部展开设备连接栏，选择当前与 iPhone 配对且启用的 Apple Watch。手表端仅作为 MG 读写助手，工具应用、字段编辑、备份、导入导出和恢复都在 iPhone 上操作。每只手表的备份与 iPhone 备份分开保存，写入前在两端保存原始备份，写入后回读验证。预设对应的系统功能仍取决于目标设备，iPhone / iPad 专用功能不会因为写入 MG 而出现在 watchOS 上。
+
+1. 安装同时包含 iPhone App 和 `Watch/GestaltWatch.app` 的 IPA；两个 App 及各自的 App Group 都需要正确签名。
+2. 在设备栏点按“安装手表助手”，按提示打开系统 Watch App，在“可用 App”中安装 GestaltEdit。若签名工具剥离了 Watch App，请使用保留 Watch 内容的工具或通过 Xcode 的 GestaltWatch 目标直接安装。
+3. 在 Apple Watch 上打开 GestaltEdit 助手，保持助手处于前台且手表在附近，然后在 iPhone 上选择 Apple Watch。手表端无需编辑或确认 MG 修改。
+4. 在 iPhone 上应用修改或恢复备份后，手动重新启动 Apple Watch。不会重启 iPhone 的桌面。
+
+构建最低要求为 watchOS 26.0；系统访问能否成功仍取决于 watchOS 版本和签名，尚未验证真机兼容范围。多只配对手表使用系统当前启用的一只，可在系统 Watch App 中切换。
+
+设计参考：[HermesEnabler](https://github.com/pookjw/HermesEnabler) 的 iPhone / Watch 伴侣结构；MG 访问复用 GestaltEdit 自身的实现。
+
 ## 致谢
 
 - [Nugget](https://github.com/leminlimez/Nugget) —— 预设与 iPadOS 支持

@@ -11,12 +11,13 @@ struct ContentView: View {
                     TweakWorkbench()
                         .tabItem { Label("Tools", systemImage: "switch.2") }
 
-                    NavigationStack { AdvancedGestaltEditor() }
+                    NavigationStack { AdvancedGestaltEditor().id(viewModel.deviceContextID) }
                         .tabItem { Label("Fields", systemImage: "list.bullet.rectangle") }
 
-                    BackupLibrary()
+                    BackupLibrary().id(viewModel.deviceContextID)
                         .tabItem { Label("Restore", systemImage: "archivebox") }
                 }
+                .disabled(viewModel.isBusy)
                 .task { viewModel.load() }
         }
         .overlay {
@@ -40,7 +41,10 @@ private struct TweakWorkbench: View {
     var body: some View {
         NavigationStack {
             List {
-                Section { deviceStatus }
+                Section {
+                    DeviceSelector(watch: viewModel.watch)
+                    if viewModel.plist == nil { deviceStatus }
+                }
 
                 if viewModel.plist != nil {
                     tweakSection(.region)
@@ -394,7 +398,7 @@ private struct BackupLibrary: View {
                     }
                 }
             }
-            .navigationTitle("Restore")
+            .navigationTitle(viewModel.selectedDevice == .appleWatch ? String(localized: "Apple Watch Backups") : String(localized: "Restore"))
             .refreshable { viewModel.refreshBackups() }
             .onAppear { viewModel.refreshBackups() }
             .fileImporter(
@@ -423,7 +427,9 @@ private struct BackupLibrary: View {
                 }
                 Button("Cancel", role: .cancel) { backupToRestore = nil }
             } message: {
-                Text("The current file will be backed up first. SpringBoard will refresh automatically after restoring.")
+                Text(viewModel.selectedDevice == .appleWatch
+                     ? String(localized: "The current Apple Watch file will be backed up first. Restart the watch after restoring.")
+                     : String(localized: "The current file will be backed up first. SpringBoard will refresh automatically after restoring."))
             }
         }
     }

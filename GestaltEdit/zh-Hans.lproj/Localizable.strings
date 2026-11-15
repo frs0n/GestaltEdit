@@ -268,3 +268,7 @@
 "Class %lld" = "布局 %lld";
 "A larger Ultra layout may affect other watch faces and complications." = "较大的 Ultra 布局可能影响其他表盘和复杂功能。";
 "The selected Ultra face layout is unavailable or the original Watch cache could not be verified. No changes were written." = "所选 Ultra 表盘布局不可用，或无法验证手表原始缓存。未写入任何修改。";
+"Saved to Apple Watch and verified. Automatic watch interface restart requested." = "已写入 Apple Watch 并验证，已请求自动重启手表界面。";
+"Saved to Apple Watch and verified, but the automatic interface restart could not be confirmed. Restart Apple Watch manually if needed.\n%@" = "已写入 Apple Watch 并验证，但无法确认界面是否自动重启。如有需要，请手动重新启动 Apple Watch。\n%@";
+"Saved. Waiting for the iPhone to restart the watch interface." = "已保存，正在等待 iPhone 自动重启手表界面。";
+"The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring." = "恢复前会先备份 Apple Watch 当前的文件，恢复后会自动重启手表界面。";

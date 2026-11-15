@@ -430,7 +430,7 @@ private struct BackupLibrary: View {
                 Button("Cancel", role: .cancel) { backupToRestore = nil }
             } message: {
                 Text(viewModel.selectedDevice == .appleWatch
-                     ? String(localized: "The current Apple Watch file will be backed up first. Restart the watch after restoring.")
+                     ? String(localized: "The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring.")
                      : String(localized: "The current file will be backed up first. SpringBoard will refresh automatically after restoring."))
             }
         }

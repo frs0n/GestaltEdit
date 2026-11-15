@@ -437,18 +437,6 @@ final class GestaltViewModel: ObservableObject {
         return GestaltPlist(dict: try WatchMGWire.decode(watchSnapshot))
     }
 
-    func restartWatchInterface() {
-        guard selectedDevice == .appleWatch, !isBusy, !isDirty, !hasStagedTweaks, let id = watchDeviceID else { return }
-        isBusy = true
-        Task {
-            defer { isBusy = false }
-            do {
-                try await watch.restartInterface(deviceID: id)
-                notice = GestaltNotice(kind: .saved, message: String(localized: "Watch interface restart requested. Wait for Apple Watch to reconnect."))
-            } catch { report(error) }
-        }
-    }
-
     private func loadWatch() {
         isBusy = true
         notice = nil
@@ -504,6 +492,7 @@ final class GestaltViewModel: ObservableObject {
                 try await watch.write(data, deviceID: id, expectedHash: WatchMGWire.digest(snapshot))
                 guard generation == watchGeneration else { return }
                 let verified = try await watch.read(deviceID: id)
+                guard generation == watchGeneration else { return }
                 let dictionary = try WatchMGWire.decode(verified)
                 guard NSDictionary(dictionary: dictionary).isEqual(to: pending.dict) else {
                     throw GestaltEditError.verificationFailed
@@ -513,7 +502,18 @@ final class GestaltViewModel: ObservableObject {
                 isDirty = false
                 completion?()
                 refreshBackups()
-                notice = GestaltNotice(kind: .saved, message: String(localized: "Saved to Apple Watch and verified. Tap Restart Watch Interface to apply changes."))
+                // Restart only after both helper-side and iPhone-side readback
+                // verification succeeds. Keep restart errors separate: the MG
+                // write is already committed and must not be marked dirty/retried.
+                do {
+                    try await watch.restartInterface(deviceID: id)
+                    notice = GestaltNotice(kind: .saved, message: String(localized: "Saved to Apple Watch and verified. Automatic watch interface restart requested."))
+                } catch {
+                    notice = GestaltNotice(kind: .saved, message: String(
+                        format: String(localized: "Saved to Apple Watch and verified, but the automatic interface restart could not be confirmed. Restart Apple Watch manually if needed.\n%@"),
+                        error.localizedDescription
+                    ))
+                }
             } catch {
                 // A timeout can occur after commit. Force a fresh read before any retry.
                 watchSnapshot = nil

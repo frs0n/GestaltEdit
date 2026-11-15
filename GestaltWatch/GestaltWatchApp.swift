@@ -79,7 +79,7 @@ final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
                 }
                 let response = try service.handle(message)
                 if response["saved"] as? Bool == true {
-                    status = String(localized: "Saved. Restart your Apple Watch to apply changes.")
+                    status = String(localized: "Saved. Waiting for the iPhone to restart the watch interface.")
                 }
                 replyHandler(response)
             }

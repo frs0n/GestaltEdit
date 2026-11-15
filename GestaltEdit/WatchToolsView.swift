@@ -89,13 +89,5 @@ struct WatchToolsSections: View {
                 }
             }
         }
-        Section {
-            Button(action: viewModel.restartWatchInterface) {
-                Label("Restart Watch Interface", systemImage: "arrow.clockwise")
-            }
-            .disabled(viewModel.isBusy || viewModel.hasStagedTweaks || viewModel.isDirty || !viewModel.watch.isReachable)
-        } footer: {
-            Text("Select capabilities to enable, then Apply. Use Restore to undo changes. Restart the watch interface after applying.")
-        }
     }
 }

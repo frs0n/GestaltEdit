@@ -77,3 +77,7 @@
 "Watch interface restart was not accepted." = "手表未接受界面重启请求。";
 "Watch interface restart is unavailable. Restart Apple Watch manually." = "当前无法重启手表界面，请手动重新启动 Apple Watch。";
 "Saved to Apple Watch and verified. Tap Restart Watch Interface to apply changes." = "已写入 Apple Watch 并验证，请点按“重启手表界面”使修改生效。";
+"Saved to Apple Watch and verified. Automatic watch interface restart requested." = "已写入 Apple Watch 并验证，已请求自动重启手表界面。";
+"Saved to Apple Watch and verified, but the automatic interface restart could not be confirmed. Restart Apple Watch manually if needed.\n%@" = "已写入 Apple Watch 并验证，但无法确认界面是否自动重启。如有需要，请手动重新启动 Apple Watch。\n%@";
+"Saved. Waiting for the iPhone to restart the watch interface." = "已保存，正在等待 iPhone 自动重启手表界面。";
+"The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring." = "恢复前会先备份 Apple Watch 当前的文件，恢复后会自动重启手表界面。";

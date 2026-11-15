@@ -12,33 +12,22 @@ struct DeviceSelector: View {
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             Button { select(.iPhone) } label: {
-                deviceRow("iPhone / iPad", icon: "iphone", selected: viewModel.selectedDevice == .iPhone)
+                deviceRow("iPhone / iPad", icon: "iphone", status: nil,
+                          selected: viewModel.selectedDevice == .iPhone)
             }
             .disabled(viewModel.isBusy)
 
-            if watch.isPaired {
-                Button { select(.appleWatch) } label: {
-                    deviceRow(watch.name, icon: "applewatch", selected: viewModel.selectedDevice == .appleWatch)
+            Button {
+                if watch.isPaired && watch.isInstalled && watch.isReachable {
+                    select(.appleWatch)
+                } else {
+                    showsInstallation = true
                 }
-                .disabled(viewModel.isBusy)
-
-                LabeledContent("Watch Helper") {
-                    Text(watch.isInstalled ? (watch.isReachable ? String(localized: "Connected") : String(localized: "Offline")) : String(localized: "Not Installed"))
-                        .foregroundStyle(watch.isReachable ? Color.green : Color.secondary)
-                }
-                if !watch.version.isEmpty {
-                    LabeledContent("watchOS", value: watch.version)
-                }
-                if !watch.isInstalled {
-                    Button("Install Watch Helper") { showsInstallation = true }
-                } else if !watch.isReachable {
-                    Text("Open GestaltEdit Helper on your Apple Watch and keep it nearby, then reload.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
-            } else {
-                Label("No Apple Watch Paired", systemImage: "applewatch.slash")
-                    .foregroundStyle(.secondary)
+            } label: {
+                deviceRow(watch.name, icon: "applewatch", status: watchStatus,
+                          selected: viewModel.selectedDevice == .appleWatch)
             }
+            .disabled(viewModel.isBusy)
         } label: {
             HStack {
                 Label(viewModel.selectedDevice == .appleWatch ? watch.name : viewModel.aiRegionProfile?.marketingName ?? String(localized: "Current Device"),
@@ -61,6 +50,7 @@ struct DeviceSelector: View {
             Button("Discard and Switch", role: .destructive) {
                 if let pendingDevice { viewModel.selectDevice(pendingDevice) }
                 pendingDevice = nil
+                isExpanded = false
             }
             Button("Cancel", role: .cancel) { pendingDevice = nil }
         }
@@ -70,18 +60,32 @@ struct DeviceSelector: View {
             NavigationStack {
                 List {
                     Section {
-                        Text("Open the Watch app on this iPhone, find GestaltEdit in Available Apps, and tap Install. Then open GestaltEdit Helper on your Apple Watch.")
-                        Button("Open Watch App") {
-                            UIApplication.shared.open(URL(string: "itms-watchs://")!) { opened in
-                                if opened { showsInstallation = false }
+                        if !watch.isPaired {
+                            Text("Open the Watch app on this iPhone and pair your Apple Watch first.")
+                        } else if !watch.isInstalled {
+                            Text("Open the Watch app on this iPhone, find GestaltEdit in Available Apps, and tap Install. Then open GestaltEdit Helper on your Apple Watch.")
+                        } else {
+                            Text("Open GestaltEdit Helper on your Apple Watch and keep it nearby, then reload.")
+                        }
+                        if watch.isPaired && watch.isInstalled {
+                            Button("Connect") {
+                                showsInstallation = false
+                                if viewModel.selectedDevice == .appleWatch { viewModel.load() }
+                                else { select(.appleWatch) }
+                            }
+                            .disabled(!watch.isReachable || viewModel.isBusy)
+                        } else {
+                            Button("Open Watch App") {
+                                UIApplication.shared.open(URL(string: "itms-watchs://")!) { opened in
+                                    if opened { showsInstallation = false }
+                                }
                             }
                         }
                     }
-                    Section {
-                        Text("If GestaltEdit is missing, reinstall an IPA that includes the Watch Helper. Both apps and their App Groups must be signed. You can also install the helper directly with Xcode.")
-                    }
                 }
-                .navigationTitle("Install Watch Helper")
+                .navigationTitle(watch.isPaired
+                                 ? (watch.isInstalled ? String(localized: "Connect Apple Watch") : String(localized: "Install Watch Helper"))
+                                 : String(localized: "Set Up Apple Watch"))
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showsInstallation = false } } }
             }
         }
@@ -90,14 +94,29 @@ struct DeviceSelector: View {
     private func select(_ device: GestaltViewModel.Device) {
         guard device != viewModel.selectedDevice else { return }
         if viewModel.isDirty || viewModel.hasStagedTweaks { pendingDevice = device }
-        else { viewModel.selectDevice(device) }
+        else {
+            viewModel.selectDevice(device)
+            isExpanded = false
+        }
     }
 
-    private func deviceRow(_ title: String, icon: String, selected: Bool) -> some View {
+    private var watchStatus: String {
+        if !watch.isPaired { return String(localized: "Not Paired") }
+        if !watch.isInstalled { return String(localized: "Not Installed") }
+        return watch.isReachable ? String(localized: "Connected") : String(localized: "Offline")
+    }
+
+    private func deviceRow(_ title: String, icon: String, status: String?, selected: Bool) -> some View {
         HStack {
             Label(title, systemImage: icon)
             Spacer()
-            if selected { Image(systemName: "checkmark").foregroundStyle(.tint) }
+            if let status {
+                Text(status).font(.subheadline).foregroundStyle(.secondary)
+            }
+            Image(systemName: "checkmark")
+                .foregroundStyle(.tint)
+                .opacity(selected ? 1 : 0)
+                .accessibilityHidden(true)
         }
         .foregroundStyle(.primary)
         .contentShape(Rectangle())

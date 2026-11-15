@@ -184,6 +184,9 @@
 "Install Watch Helper" = "安装手表助手";
 "Open Watch App" = "打开 Watch App";
 "No Apple Watch Paired" = "未配对 Apple Watch";
+"Set Up Apple Watch" = "设置 Apple Watch";
+"Pair an Apple Watch with this iPhone to manage its MobileGestalt from GestaltEdit." = "将 Apple Watch 与此 iPhone 配对，即可通过 GestaltEdit 管理手表的 MobileGestalt。";
+"Open the Watch app on this iPhone and pair your Apple Watch first." = "请先在此 iPhone 上打开 Watch App，完成 Apple Watch 配对。";
 "Discard Pending Changes?" = "丢弃待保存的修改？";
 "Discard and Switch" = "丢弃并切换";
 "Open the Watch app on this iPhone, find GestaltEdit in Available Apps, and tap Install. Then open GestaltEdit Helper on your Apple Watch." = "在此 iPhone 上打开 Watch App，在“可用 App”中找到 GestaltEdit 并点按“安装”，然后在 Apple Watch 上打开 GestaltEdit 助手。";
@@ -213,3 +216,6 @@
 "Apple Watch transfer verification failed." = "Apple Watch 传输校验失败。";
 "Save was not confirmed. Reload before retrying." = "无法确认保存结果，请重新载入后再试。";
 "Invalid Apple Watch identifier." = "Apple Watch 标识无效。";
+"Not Paired" = "未配对";
+"Connect Apple Watch" = "连接 Apple Watch";
+"Connect" = "连接";

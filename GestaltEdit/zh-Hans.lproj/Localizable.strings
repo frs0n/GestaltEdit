@@ -261,3 +261,6 @@
 "Watch interface restart was not accepted." = "手表未接受界面重启请求。";
 "Watch interface restart is unavailable. Restart Apple Watch manually." = "当前无法重启手表界面，请手动重新启动 Apple Watch。";
 "Saved to Apple Watch and verified. Tap Restart Watch Interface to apply changes." = "已写入 Apple Watch 并验证，请点按“重启手表界面”使修改生效。";
+"Apple Intelligence" = "Apple 智能";
+"Enable Siri AI" = "启用 Siri AI";
+"Automatically adjusts unsupported regions to the United States." = "不支持的地区会自动调整为美国。";

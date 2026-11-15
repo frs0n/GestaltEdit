@@ -11,6 +11,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
     @Published private(set) var name = "Apple Watch"
     @Published private(set) var version = ""
     @Published private(set) var build = ""
+    @Published private(set) var regionIdentifier = ""
     @Published private(set) var pairingGeneration = 0
     private let session = WCSession.default
 
@@ -27,7 +28,13 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
         isPaired = session.isPaired
         isInstalled = session.isWatchAppInstalled
         isReachable = session.activationState == .activated && session.isReachable
-        if !isPaired || !isInstalled { deviceID = nil; name = "Apple Watch"; version = "" }
+        if !isPaired || !isInstalled {
+            deviceID = nil
+            name = "Apple Watch"
+            version = ""
+            build = ""
+            regionIdentifier = ""
+        }
     }
 
     func identify() async throws -> String {
@@ -38,6 +45,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
         name = response["name"] as? String ?? "Apple Watch"
         version = response["version"] as? String ?? ""
         build = response["build"] as? String ?? ""
+        regionIdentifier = response["regionIdentifier"] as? String ?? ""
         return id
     }
 

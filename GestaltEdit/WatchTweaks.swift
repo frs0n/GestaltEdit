@@ -47,9 +47,8 @@ enum WatchTweakCatalog {
         .init(id: "swimming", title: String(localized: "Swimming Workouts"), group: .sensors, keys: ["cRjPy4Ef+KZwJ+nfPeBV5Q"]),
         .init(id: "raiseToSpeak", title: String(localized: "Raise to Speak"), group: .voice, keys: ["4D8XW4YwJI7QvyPhv1TEdw"]),
         .init(id: "siriListening", title: String(localized: "Siri Listening Capability"), group: .voice, keys: ["U+73bmG4kBGj6kpreQXUTQ"]),
-        .init(id: "appleIntelligence", title: String(localized: "Apple Intelligence Capability"), group: .intelligence, keys: ["A62OafQ85EJAiiqKn4agtg"]),
-        .init(id: "onDeviceSiri", title: String(localized: "On-Device Siri"), group: .intelligence, keys: ["K/R1GfGfCkXvEhaPS2Vrng"]),
-        .init(id: "audioIntelligence", title: String(localized: "Audio Intelligence"), group: .intelligence, keys: ["rb2tKZxlj0Gm2tBmUQSLqQ"])
+        .init(id: "intelligence", title: String(localized: "Enable Siri AI"), group: .intelligence,
+              keys: ["A62OafQ85EJAiiqKn4agtg", "K/R1GfGfCkXvEhaPS2Vrng", "rb2tKZxlj0Gm2tBmUQSLqQ"])
     ]
 
     static let regions = [("United States", "LL", "LL/A"), ("Hong Kong", "ZA", "ZA/A"),
@@ -58,6 +57,33 @@ enum WatchTweakCatalog {
     static let resolutions = [("SE · 40 mm", 324, 394), ("SE · 44 mm", 368, 448),
                               ("S7–S9 · 41 mm", 352, 430), ("S7–S9 · 45 mm", 396, 484),
                               ("S10–S12 · 42 mm", 374, 446), ("S10–S12 · 46 mm", 416, 496)]
+
+    // Siri AI is unavailable on watchOS in the EU and mainland China.
+    // Source: https://support.apple.com/en-us/127893 (2026-11-15).
+    // Use the Watch's regional setting, not the paired iPhone's locale or GPS.
+    private static let unsupportedIntelligenceRegions: Set<String> = [
+        "CN", "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE",
+        "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"
+    ]
+
+    static func needsIntelligenceRegionChange(plist: GestaltPlist, regionIdentifier: String) -> Bool {
+        if unsupportedIntelligenceRegions.contains(regionIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()) { return true }
+        // Also recognize mainland-China MG region/sales markers, including
+        // older helpers that do not yet report their regional setting.
+        return ["h63QSdBCiT/z0WU6rdQv6Q", "zHeENZu+wbg7PUprwNwBWg", "yK+xavymRGZ3xWc1tb8XDg"].contains { key in
+            guard let value = plist.cacheExtra[key] as? String else { return false }
+            return value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().split(separator: "/").first == "CH"
+        }
+    }
+
+    private static func adjustIntelligenceRegion(_ plist: inout GestaltPlist, regionIdentifier: String) {
+        guard needsIntelligenceRegionChange(plist: plist, regionIdentifier: regionIdentifier) else { return }
+        plist.setCacheExtra("LL", forKey: "h63QSdBCiT/z0WU6rdQv6Q")
+        let current = "zHeENZu+wbg7PUprwNwBWg", legacy = "yK+xavymRGZ3xWc1tb8XDg"
+        let hasCurrent = plist.cacheExtra[current] != nil, hasLegacy = plist.cacheExtra[legacy] != nil
+        if hasCurrent || !hasLegacy { plist.setCacheExtra("LL/A", forKey: current) }
+        if hasLegacy { plist.setCacheExtra("LL/A", forKey: legacy) }
+    }
 
     static func resource(_ name: String, directory: URL? = nil) -> [String: Any] {
         let url = directory?.appendingPathComponent(name + ".plist") ?? Bundle.main.url(forResource: name, withExtension: "plist")
@@ -81,12 +107,13 @@ enum WatchTweakCatalog {
         return layout
     }
 
-    static func apply(_ identifiers: Set<String>, to plist: GestaltPlist, build: String, directory: URL? = nil) throws -> GestaltPlist {
+    static func apply(_ identifiers: Set<String>, to plist: GestaltPlist, build: String, regionIdentifier: String = "", directory: URL? = nil) throws -> GestaltPlist {
         var result = plist
         for id in identifiers.sorted() {
             guard let definition = definitions.first(where: { $0.id == id }) else { throw WatchMGWire.failure("Unknown Watch preset.") }
             if !definition.isFace {
                 for key in definition.keys { result.setCacheExtra(true, forKey: key) }
+                if id == "intelligence" { adjustIntelligenceRegion(&result, regionIdentifier: regionIdentifier) }
                 continue
             }
             guard let layout = faceLayout(plist: result, build: build, directory: directory),

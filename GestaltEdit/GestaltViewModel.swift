@@ -370,7 +370,7 @@ final class GestaltViewModel: ObservableObject {
     private func applyWatchTweaks() {
         guard !isBusy, let plist else { return }
         do {
-            var pending = try WatchTweakCatalog.apply(selectedWatchTweaks, to: plist, build: watch.build)
+            var pending = plist
             if !watchRegionCode.isEmpty {
                 guard WatchTweakCatalog.regions.contains(where: { $0.1 == watchRegionCode }) else { return }
                 pending.setCacheExtra(watchRegionCode, forKey: "h63QSdBCiT/z0WU6rdQv6Q")
@@ -382,6 +382,10 @@ final class GestaltViewModel: ObservableObject {
                 if hasCurrent || !hasLegacy { pending.setCacheExtra(watchSalesRegion, forKey: current) }
                 if hasLegacy { pending.setCacheExtra(watchSalesRegion, forKey: legacy) }
             }
+            // Apply the combined AI preset after manual region selections so
+            // enabling it cannot leave a newly selected unsupported MG region.
+            pending = try WatchTweakCatalog.apply(selectedWatchTweaks, to: pending, build: watch.build,
+                                                  regionIdentifier: watch.regionIdentifier)
             if WatchTweakCatalog.resolutions.indices.contains(watchResolution) {
                 let resolution = WatchTweakCatalog.resolutions[watchResolution]
                 pending.setCacheExtra(resolution.1, forKey: "g7YQ1Djxh4YiKlEeaoGhzg")

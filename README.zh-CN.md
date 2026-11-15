@@ -54,7 +54,7 @@
 
 ## Apple Watch 助手
 
-在 Tools 顶部展开设备连接栏，选择当前与 iPhone 配对且启用的 Apple Watch。手表端仅作为 MG 读写助手，watchOS 专用预设、字段编辑、备份、导入导出和恢复都在 iPhone 上操作。每只手表的备份与 iPhone 备份分开保存，写入前在两端保存原始备份，写入后回读验证。选择手表后显示独立预设：Hermès / Ultra 表盘、手表显示与控制、传感器与体能训练、语音与智能功能、独立地区字段以及手表分辨率。手表不会应用 iPhone / iPad 预设。表盘修改使用 HermesEnabler 的版本表，并校验手表的系统构建号、CacheUUID、缓存长度和存在标记。
+在 Tools 顶部展开设备连接栏，选择当前与 iPhone 配对且启用的 Apple Watch。手表端仅作为 MG 读写助手，watchOS 专用预设、字段编辑、备份、导入导出和恢复都在 iPhone 上操作。每只手表的备份与 iPhone 备份分开保存，写入前在两端保存原始备份，写入后回读验证。选择手表后显示独立预设：Hermès / Ultra 表盘、手表显示与控制、传感器与体能训练、语音、置顶的一键 Siri AI、独立地区字段以及手表分辨率。手表不会应用 iPhone / iPad 预设。表盘修改使用 HermesEnabler 的版本表，并校验手表的系统构建号、CacheUUID、缓存长度和存在标记。一键 Siri AI 会同时启用三个手表智能能力标记；仅当手表上报不支持的地区设置（中国大陆或欧盟），或 MG 中存在中国大陆地区标记时，将 MG 地区与销售地区字段调整为美国，其余地区保留原值。这不会修改 Apple 账户地区或改变基于位置的服务资格。
 
 1. 安装同时包含 iPhone App 和 `Watch/GestaltWatch.app` 的 IPA；两个 App 及各自的 App Group 都需要正确签名。
 2. 在设备栏点按“安装手表助手”，按提示打开系统 Watch App，在“可用 App”中安装 GestaltEdit。若签名工具剥离了 Watch App，请使用保留 Watch 内容的工具或通过 Xcode 的 GestaltWatch 目标直接安装。

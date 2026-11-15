@@ -4,7 +4,20 @@ struct WatchToolsSections: View {
     @EnvironmentObject private var viewModel: GestaltViewModel
 
     var body: some View {
-        ForEach(WatchTweakGroup.allCases) { group in
+        Section {
+            Toggle("Enable Siri AI", isOn: Binding(
+                get: { viewModel.selectedWatchTweaks.contains("intelligence") },
+                set: { enabled in
+                    if enabled { viewModel.selectedWatchTweaks.insert("intelligence") }
+                    else { viewModel.selectedWatchTweaks.remove("intelligence") }
+                }
+            ))
+        } header: {
+            Text("Apple Intelligence")
+        } footer: {
+            Text("Automatically adjusts unsupported regions to the United States.")
+        }
+        ForEach(WatchTweakGroup.allCases.filter { $0 != .intelligence }) { group in
             Section {
                 ForEach(WatchTweakCatalog.definitions.filter { $0.group == group }) { definition in
                     Toggle(definition.title, isOn: Binding(
@@ -27,8 +40,6 @@ struct WatchToolsSections: View {
                     }
                 } else if group == .sensors {
                     Text("Capability flags do not add missing sensors or override Health permissions.")
-                } else if group == .intelligence {
-                    Text("Availability depends on watchOS, hardware and Apple services.")
                 }
             }
         }

@@ -46,7 +46,8 @@ final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
 
     private func information() -> [String: Any] {
         ["protocol": WatchMGWire.protocolVersion, "deviceID": identifier, "name": WKInterfaceDevice.current().name,
-         "version": WKInterfaceDevice.current().systemVersion, "build": systemBuild()]
+         "version": WKInterfaceDevice.current().systemVersion, "build": systemBuild(),
+         "regionIdentifier": Locale.current.region?.identifier ?? ""]
     }
 
     private func systemBuild() -> String {

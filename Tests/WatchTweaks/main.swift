@@ -11,7 +11,7 @@ bytes.replaceSubrange(3760..<3764, with: [35, 0, 0, 0])
 let original = GestaltPlist(dict: ["CacheData": bytes,
     "CacheUUID": "32B4CA84-FBDA-496C-9B79-2101D597158B",
     "CacheExtra": ["fuKL2rMywRgQF1wowOA/cg": 0, "fdh+s6j3VijuyrK7xLjd7g": 35, "unrelated": "keep"]])
-let changed = try WatchTweakCatalog.apply(["hermes", "ultra", "actionButton", "doubleTap", "keyboard", "onDeviceSiri"], to: original, build: build, directory: resources)
+let changed = try WatchTweakCatalog.apply(["hermes", "ultra", "actionButton", "doubleTap", "keyboard", "intelligence"], to: original, build: build, directory: resources)
 let data = changed.dict["CacheData"] as! Data
 var expected = bytes
 expected[840] = 1
@@ -57,3 +57,47 @@ for (name, entry) in WatchTweakCatalog.resource("WatchMGOffsets", directory: res
     _ = try WatchTweakCatalog.apply(["hermes", "ultra"], to: plist, build: name, directory: resources)
 }
 print("Passed: all reference Watch layouts; Hermès/Ultra golden bytes; Watch-specific controls; preservation of unrelated data; unknown build, UUID, length and presence rejection; no iPhone/iPad preset leakage.")
+
+let regionKey = "h63QSdBCiT/z0WU6rdQv6Q"
+let currentSales = "zHeENZu+wbg7PUprwNwBWg"
+let legacySales = "yK+xavymRGZ3xWc1tb8XDg"
+let intelligenceKeys = ["A62OafQ85EJAiiqKn4agtg", "K/R1GfGfCkXvEhaPS2Vrng", "rb2tKZxlj0Gm2tBmUQSLqQ"]
+precondition(WatchTweakCatalog.definitions.filter { $0.group == .intelligence }.map(\.id) == ["intelligence"])
+for region in ["CN", "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE", " cn "] {
+    var source = original
+    source.setCacheExtra("D", forKey: regionKey)
+    source.setCacheExtra("D/A", forKey: currentSales)
+    source.setCacheExtra("D/A", forKey: legacySales)
+    let output = try WatchTweakCatalog.apply(["intelligence"], to: source, build: "", regionIdentifier: region)
+    precondition(output.cacheExtra[regionKey] as? String == "LL")
+    precondition(output.cacheExtra[currentSales] as? String == "LL/A")
+    precondition(output.cacheExtra[legacySales] as? String == "LL/A")
+    for key in intelligenceKeys { precondition(output.cacheExtra[key] as? Bool == true) }
+    precondition(output.dict["CacheData"] as! Data == bytes)
+    precondition(output.cacheExtra["h9jDsbgj7xIVeIQ8S3/X3Q"] == nil)
+    precondition(output.cacheExtra["a3n5T9sFtlyQ74NEp9ESxg"] == nil)
+}
+for region in ["US", "GB", "HK", "MO", "TW", "JP", "CA", "", "UNKNOWN"] {
+    var source = original
+    source.setCacheExtra("J", forKey: regionKey)
+    source.setCacheExtra("J/A", forKey: legacySales)
+    let output = try WatchTweakCatalog.apply(["intelligence"], to: source, build: "", regionIdentifier: region)
+    var expected = source
+    for key in intelligenceKeys { expected.setCacheExtra(true, forKey: key) }
+    precondition(NSDictionary(dictionary: output.dict).isEqual(to: expected.dict), "Supported/unknown regions must be preserved")
+}
+// Detect CH in either generation of sales field, even if a helper lacks locale metadata.
+for marker in [regionKey, currentSales, legacySales] {
+    var source = original
+    source.setCacheExtra(marker == regionKey ? "CH" : "CH/A", forKey: marker)
+    let output = try WatchTweakCatalog.apply(["intelligence"], to: source, build: "", regionIdentifier: "US")
+    precondition(output.cacheExtra[regionKey] as? String == "LL")
+    precondition(output.cacheExtra[marker == legacySales ? legacySales : currentSales] as? String == "LL/A")
+    if marker == legacySales { precondition(output.cacheExtra[currentSales] == nil) }
+}
+// The region correction is part of the AI preset only, never an unrelated Watch toggle.
+var china = original
+china.setCacheExtra("CH", forKey: regionKey)
+let unchangedRegion = try WatchTweakCatalog.apply(["keyboard"], to: china, build: "", regionIdentifier: "CN")
+precondition(unchangedRegion.cacheExtra[regionKey] as? String == "CH")
+print("Passed: combined AI flags, mainland China and all EU regional settings, existing MG China markers, supported/unknown-region preservation, legacy/current sales fields, no device identity spoofing or iPhone SiriMode changes.")

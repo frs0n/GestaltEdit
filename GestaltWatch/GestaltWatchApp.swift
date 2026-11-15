@@ -1,6 +1,7 @@
 import SwiftUI
 import WatchConnectivity
 import WatchKit
+import Darwin
 import Combine
 
 @main
@@ -45,7 +46,15 @@ final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
 
     private func information() -> [String: Any] {
         ["protocol": WatchMGWire.protocolVersion, "deviceID": identifier, "name": WKInterfaceDevice.current().name,
-         "version": WKInterfaceDevice.current().systemVersion]
+         "version": WKInterfaceDevice.current().systemVersion, "build": systemBuild()]
+    }
+
+    private func systemBuild() -> String {
+        var count = 0
+        guard sysctlbyname("kern.osversion", nil, &count, nil, 0) == 0, count > 0 else { return "" }
+        var bytes = [CChar](repeating: 0, count: count)
+        guard sysctlbyname("kern.osversion", &bytes, &count, nil, 0) == 0 else { return "" }
+        return String(cString: bytes)
     }
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
@@ -57,6 +66,15 @@ final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
         Task { @MainActor in
             do {
                 if message["operation"] as? String == "info" { replyHandler(information()); return }
+                if message["operation"] as? String == "respring" {
+                    guard message["deviceID"] as? String == identifier else {
+                        throw WatchMGWire.failure("The selected Apple Watch has changed. Reload before continuing.")
+                    }
+                    var error: NSError?
+                    guard GestaltWatchStartRespring(&error) else { throw error ?? WatchMGWire.failure("Could not prepare Watch interface restart.") }
+                    replyHandler(["accepted": true])
+                    return
+                }
                 let response = try service.handle(message)
                 if response["saved"] as? Bool == true {
                     status = String(localized: "Saved. Restart your Apple Watch to apply changes.")

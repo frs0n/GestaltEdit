@@ -465,7 +465,7 @@
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_OBJC_BRIDGING_HEADER = "GestaltEdit/GestaltEdit-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "GestaltWatch/Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 26.0;
@@ -495,7 +495,7 @@
 				SUPPORTED_PLATFORMS = "watchos watchsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_OBJC_BRIDGING_HEADER = "GestaltEdit/GestaltEdit-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "GestaltWatch/Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 26.0;

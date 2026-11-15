@@ -46,7 +46,10 @@ private struct TweakWorkbench: View {
                     if viewModel.plist == nil { deviceStatus }
                 }
 
-                if viewModel.plist != nil {
+                if viewModel.selectedDevice == .appleWatch {
+                    WatchToolsSections()
+                        .disabled(viewModel.plist == nil)
+                } else if viewModel.plist != nil {
                     tweakSection(.region)
                     dynamicIslandSection
                     modelNameSection
@@ -54,7 +57,6 @@ private struct TweakWorkbench: View {
                     ForEach(GestaltTweakCategory.allCases.filter { $0 != .region }) { category in
                         tweakSection(category)
                     }
-
                 }
 
                 Section(String(localized: "Developer")) {

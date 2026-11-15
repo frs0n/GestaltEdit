@@ -54,16 +54,16 @@ Edit `com.apple.MobileGestalt.plist` on-device. Capability presets, a full field
 
 ## Apple Watch helper
 
-Expand the connection row at the top of Tools and select the active Apple Watch paired with this iPhone. The Watch app only handles MG access: presets, field editing, backup, import/export, and restore stay on the iPhone. Backups are separated by watch and from iPhone backups. Writes back up the original on both devices and verify the saved file. Presets still depend on the target platform; writing an iPhone/iPad capability does not add that feature to watchOS.
+Expand the connection row at the top of Tools and select the active Apple Watch paired with this iPhone. The Watch app only handles MG access: watchOS-specific presets, field editing, backup, import/export, and restore stay on the iPhone. Backups are separated by watch and from iPhone backups. Writes back up the original on both devices and verify the saved file. Selecting Watch shows a separate catalog: Hermès/Ultra watch faces, Watch display and controls, sensors/workouts, voice/intelligence, independent region fields and Watch resolutions. iPhone/iPad presets are never applied to Watch. Face changes require a matching Watch build, CacheUUID, cache length and present slots, using the layouts from HermesEnabler.
 
 1. Install an IPA containing both the iPhone app and `Watch/GestaltWatch.app`. Sign both apps and their respective App Groups.
 2. Tap **Install Watch Helper** in the device selector and follow the instructions to install GestaltEdit from **Available Apps** in the system Watch app. If a signing tool strips Watch content, use a tool that preserves it or install the **GestaltWatch** target directly with Xcode.
 3. Open GestaltEdit Helper on the watch and keep it in the foreground nearby. Select Apple Watch in the iPhone app. No MG editing or approval is required on the watch.
-4. After applying changes or restoring a backup, restart Apple Watch manually. The iPhone does not respring for Watch writes.
+4. After applying changes or restoring a backup, tap **Restart Watch Interface** on the iPhone. The helper dynamically loads WebKit on the watch and runs the NeoSpring path adapted from HermesEnabler/Gester to request a Carousel restart. Missing runtime support reports an error and requires a manual watch restart. Acceptance of the request does not confirm that Carousel restarted. The iPhone does not respring for Watch writes.
 
 The build deployment target is watchOS 26.0. Actual system access depends on the watchOS version and signing; device compatibility has not been verified. With multiple paired watches, the app uses the system's active watch; switch watches in the system Watch app.
 
-Design reference: [HermesEnabler](https://github.com/pookjw/HermesEnabler)'s iPhone/Watch companion structure. MG access reuses GestaltEdit's own implementation.
+Design reference: [HermesEnabler](https://github.com/pookjw/HermesEnabler)'s iPhone/Watch companion structure. MG access reuses GestaltEdit's own implementation. Watch keys/layout data and the dynamic Watch NeoSpring adapter are adapted under the MIT license; license notices are bundled in the apps. No physical Watch behavior has been validated.
 
 ## Credits
 

@@ -59,6 +59,20 @@ final class GestaltViewModel: ObservableObject {
         changesModelName = false
         modelName = ""
         stagesAIRegion = false
+        selectedWatchTweaks.removeAll()
+        watchRegionCode = ""
+        watchSalesRegion = ""
+        watchResolution = -1
+    }
+
+    @Published var selectedWatchTweaks: Set<String> = []
+    @Published var watchRegionCode = ""
+    @Published var watchSalesRegion = ""
+    @Published var watchResolution = -1
+
+    var supportsWatchFaces: Bool {
+        guard selectedDevice == .appleWatch, let plist else { return false }
+        return WatchTweakCatalog.faceLayout(plist: plist, build: watch.build) != nil
     }
 
     private let access = GestaltAccess.shared()
@@ -83,14 +97,19 @@ final class GestaltViewModel: ObservableObject {
     }
 
     var hasStagedTweaks: Bool {
-        !selectedTweaks.isEmpty
+        if selectedDevice == .appleWatch { return stagedChangeCount > 0 }
+        return !selectedTweaks.isEmpty
             || dynamicIslandSubtype != nil
             || (changesModelName && !modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             || stagesAIRegion
     }
 
     var stagedChangeCount: Int {
-        selectedTweaks.count
+        if selectedDevice == .appleWatch {
+            return selectedWatchTweaks.count + (watchRegionCode.isEmpty ? 0 : 1)
+                + (watchSalesRegion.isEmpty ? 0 : 1) + (watchResolution >= 0 ? 1 : 0)
+        }
+        return selectedTweaks.count
             + (dynamicIslandSubtype == nil ? 0 : 1)
             + (changesModelName ? 1 : 0)
             + (stagesAIRegion ? 1 : 0)
@@ -142,6 +161,7 @@ final class GestaltViewModel: ObservableObject {
     }
 
     func applySelectedTweaks() {
+        if selectedDevice == .appleWatch { applyWatchTweaks(); return }
         guard !isBusy, var pending = plist else { return }
         do {
             for id in selectedTweaks {
@@ -347,6 +367,42 @@ final class GestaltViewModel: ObservableObject {
         }
     }
 
+    private func applyWatchTweaks() {
+        guard !isBusy, let plist else { return }
+        do {
+            var pending = try WatchTweakCatalog.apply(selectedWatchTweaks, to: plist, build: watch.build)
+            if !watchRegionCode.isEmpty {
+                guard WatchTweakCatalog.regions.contains(where: { $0.1 == watchRegionCode }) else { return }
+                pending.setCacheExtra(watchRegionCode, forKey: "h63QSdBCiT/z0WU6rdQv6Q")
+            }
+            if !watchSalesRegion.isEmpty {
+                guard WatchTweakCatalog.regions.contains(where: { $0.2 == watchSalesRegion }) else { return }
+                let current = "zHeENZu+wbg7PUprwNwBWg", legacy = "yK+xavymRGZ3xWc1tb8XDg"
+                let hasCurrent = pending.cacheExtra[current] != nil, hasLegacy = pending.cacheExtra[legacy] != nil
+                if hasCurrent || !hasLegacy { pending.setCacheExtra(watchSalesRegion, forKey: current) }
+                if hasLegacy { pending.setCacheExtra(watchSalesRegion, forKey: legacy) }
+            }
+            if WatchTweakCatalog.resolutions.indices.contains(watchResolution) {
+                let resolution = WatchTweakCatalog.resolutions[watchResolution]
+                pending.setCacheExtra(resolution.1, forKey: "g7YQ1Djxh4YiKlEeaoGhzg")
+                pending.setCacheExtra(resolution.2, forKey: "OjzOua0LkOegX7pQdgMksw")
+            }
+            saveWatch(pending) { [weak self] in self?.clearStagedChanges() }
+        } catch { report(error) }
+    }
+
+    func restartWatchInterface() {
+        guard selectedDevice == .appleWatch, !isBusy, !isDirty, !hasStagedTweaks, let id = watchDeviceID else { return }
+        isBusy = true
+        Task {
+            defer { isBusy = false }
+            do {
+                try await watch.restartInterface(deviceID: id)
+                notice = GestaltNotice(kind: .saved, message: String(localized: "Watch interface restart requested. Wait for Apple Watch to reconnect."))
+            } catch { report(error) }
+        }
+    }
+
     private func loadWatch() {
         isBusy = true
         notice = nil
@@ -410,7 +466,7 @@ final class GestaltViewModel: ObservableObject {
                 isDirty = false
                 completion?()
                 refreshBackups()
-                notice = GestaltNotice(kind: .saved, message: String(localized: "Saved to Apple Watch and verified. Restart your Apple Watch to apply changes."))
+                notice = GestaltNotice(kind: .saved, message: String(localized: "Saved to Apple Watch and verified. Tap Restart Watch Interface to apply changes."))
             } catch {
                 // A timeout can occur after commit. Force a fresh read before any retry.
                 watchSnapshot = nil

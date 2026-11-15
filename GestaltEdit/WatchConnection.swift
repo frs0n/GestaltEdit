@@ -10,6 +10,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
     @Published private(set) var deviceID: String?
     @Published private(set) var name = "Apple Watch"
     @Published private(set) var version = ""
+    @Published private(set) var build = ""
     @Published private(set) var pairingGeneration = 0
     private let session = WCSession.default
 
@@ -36,6 +37,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
         deviceID = id
         name = response["name"] as? String ?? "Apple Watch"
         version = response["version"] as? String ?? ""
+        build = response["build"] as? String ?? ""
         return id
     }
 
@@ -67,6 +69,13 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
         }
         let result = try await request(["operation": "commit", "deviceID": deviceID, "id": id])
         guard result["saved"] as? Bool == true else { throw WatchMGWire.failure(String(localized: "Save was not confirmed. Reload before retrying.")) }
+    }
+
+    func restartInterface(deviceID: String) async throws {
+        let result = try await request(["operation": "respring", "deviceID": deviceID])
+        guard result["accepted"] as? Bool == true else {
+            throw WatchMGWire.failure(String(localized: "Watch interface restart was not accepted."))
+        }
     }
 
     private func request(_ message: [String: Any]) async throws -> [String: Any] {

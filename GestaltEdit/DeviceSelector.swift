@@ -4,30 +4,43 @@ import UIKit
 struct DeviceSelector: View {
     @EnvironmentObject private var viewModel: GestaltViewModel
     @ObservedObject var watch: WatchConnection
-    @State private var isExpanded = false
     @State private var showsInstallation = false
     @State private var pendingDevice: GestaltViewModel.Device?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
-            Button { select(.iPhone) } label: {
-                deviceRow("iPhone / iPad", icon: "iphone", status: nil,
-                          selected: viewModel.selectedDevice == .iPhone)
-            }
-            .disabled(viewModel.isBusy)
+        Group {
+            header
 
-            Button {
-                if watch.isPaired && watch.isInstalled && watch.isReachable {
-                    select(.appleWatch)
-                } else {
-                    showsInstallation = true
+            if viewModel.isDeviceSelectorExpanded {
+                Button { select(.iPhone) } label: {
+                    deviceRow("iPhone / iPad", icon: "iphone", status: nil,
+                              selected: viewModel.selectedDevice == .iPhone)
                 }
-            } label: {
-                deviceRow(watch.name, icon: "applewatch", status: watchStatus,
-                          selected: viewModel.selectedDevice == .appleWatch)
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("device-selector-iphone")
+                .disabled(viewModel.isBusy)
+
+                Button {
+                    if watch.isPaired && watch.isInstalled && watch.isReachable {
+                        select(.appleWatch)
+                    } else {
+                        showsInstallation = true
+                    }
+                } label: {
+                    deviceRow(watch.name, icon: "applewatch", status: watchStatus,
+                              selected: viewModel.selectedDevice == .appleWatch)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("device-selector-watch")
+                .disabled(viewModel.isBusy)
             }
-            .disabled(viewModel.isBusy)
+        }
+    }
+
+    private var header: some View {
+        Button {
+            withAnimation { viewModel.isDeviceSelectorExpanded.toggle() }
         } label: {
             HStack {
                 Label(viewModel.selectedDevice == .appleWatch ? watch.name : viewModel.aiRegionProfile?.marketingName ?? String(localized: "Current Device"),
@@ -42,19 +55,24 @@ struct DeviceSelector: View {
                         .font(.subheadline)
                         .foregroundStyle(viewModel.plist == nil || (viewModel.selectedDevice == .appleWatch && !watch.isReachable) ? Color.secondary : Color.green)
                 }
+                Image(systemName: viewModel.isDeviceSelectorExpanded ? "chevron.down" : "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("device-selector-toggle")
         .confirmationDialog("Discard Pending Changes?", isPresented: Binding(
             get: { pendingDevice != nil }, set: { if !$0 { pendingDevice = nil } }
         ), titleVisibility: .visible) {
             Button("Discard and Switch", role: .destructive) {
                 if let pendingDevice { viewModel.selectDevice(pendingDevice) }
                 pendingDevice = nil
-                isExpanded = false
             }
             Button("Cancel", role: .cancel) { pendingDevice = nil }
         }
-        .onChange(of: isExpanded) { _, expanded in if expanded { watch.refresh() } }
+        .onChange(of: viewModel.isDeviceSelectorExpanded) { _, expanded in if expanded { watch.refresh() } }
         .onChange(of: scenePhase) { _, phase in if phase == .active { watch.refresh() } }
         .sheet(isPresented: $showsInstallation) {
             NavigationStack {
@@ -96,7 +114,6 @@ struct DeviceSelector: View {
         if viewModel.isDirty || viewModel.hasStagedTweaks { pendingDevice = device }
         else {
             viewModel.selectDevice(device)
-            isExpanded = false
         }
     }
 

@@ -12,6 +12,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
     @Published private(set) var version = ""
     @Published private(set) var build = ""
     @Published private(set) var regionIdentifier = ""
+    @Published private(set) var hardwareIdentifier = ""
     @Published private(set) var pairingGeneration = 0
     private let session = WCSession.default
 
@@ -34,6 +35,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
             version = ""
             build = ""
             regionIdentifier = ""
+            hardwareIdentifier = ""
         }
     }
 
@@ -46,6 +48,7 @@ final class WatchConnection: NSObject, ObservableObject, WCSessionDelegate {
         version = response["version"] as? String ?? ""
         build = response["build"] as? String ?? ""
         regionIdentifier = response["regionIdentifier"] as? String ?? ""
+        hardwareIdentifier = response["hardwareIdentifier"] as? String ?? ""
         return id
     }
 

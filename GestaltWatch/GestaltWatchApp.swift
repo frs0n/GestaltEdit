@@ -46,15 +46,16 @@ final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
 
     private func information() -> [String: Any] {
         ["protocol": WatchMGWire.protocolVersion, "deviceID": identifier, "name": WKInterfaceDevice.current().name,
-         "version": WKInterfaceDevice.current().systemVersion, "build": systemBuild(),
+         "version": WKInterfaceDevice.current().systemVersion, "build": systemValue("kern.osversion"),
+         "hardwareIdentifier": systemValue("hw.machine"),
          "regionIdentifier": Locale.current.region?.identifier ?? ""]
     }
 
-    private func systemBuild() -> String {
+    private func systemValue(_ key: String) -> String {
         var count = 0
-        guard sysctlbyname("kern.osversion", nil, &count, nil, 0) == 0, count > 0 else { return "" }
+        guard sysctlbyname(key, nil, &count, nil, 0) == 0, count > 0 else { return "" }
         var bytes = [CChar](repeating: 0, count: count)
-        guard sysctlbyname("kern.osversion", &bytes, &count, nil, 0) == 0 else { return "" }
+        guard sysctlbyname(key, &bytes, &count, nil, 0) == 0 else { return "" }
         return String(cString: bytes)
     }
 

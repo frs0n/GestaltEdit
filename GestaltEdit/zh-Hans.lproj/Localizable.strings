@@ -264,3 +264,7 @@
 "Apple Intelligence" = "Apple 智能";
 "Enable Siri AI" = "启用 Siri AI";
 "Automatically adjusts unsupported regions to the United States." = "不支持的地区会自动调整为美国。";
+"Ultra Face Layout" = "Ultra 表盘布局";
+"Class %lld" = "布局 %lld";
+"A larger Ultra layout may affect other watch faces and complications." = "较大的 Ultra 布局可能影响其他表盘和复杂功能。";
+"The selected Ultra face layout is unavailable or the original Watch cache could not be verified. No changes were written." = "所选 Ultra 表盘布局不可用，或无法验证手表原始缓存。未写入任何修改。";

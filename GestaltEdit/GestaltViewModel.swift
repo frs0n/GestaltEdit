@@ -66,12 +66,28 @@ final class GestaltViewModel: ObservableObject {
         watchRegionCode = ""
         watchSalesRegion = ""
         watchResolution = -1
+        watchUltraFaceClass = 29
     }
 
     @Published var selectedWatchTweaks: Set<String> = []
     @Published var watchRegionCode = ""
     @Published var watchSalesRegion = ""
     @Published var watchResolution = -1
+    @Published var watchUltraFaceClass = 29
+
+    var watchUltraFaceClassOptions: [Int] {
+        guard selectedDevice == .appleWatch, let plist else { return [] }
+        return WatchTweakCatalog.ultraFaceClasses(plist: plist, build: watch.build)
+    }
+
+    var currentWatchUltraFaceClass: Int? {
+        guard selectedDevice == .appleWatch, let plist else { return nil }
+        return WatchTweakCatalog.currentUltraFaceClass(plist: plist, build: watch.build)
+    }
+
+    private func syncWatchUltraFaceClass() {
+        watchUltraFaceClass = currentWatchUltraFaceClass ?? watchUltraFaceClassOptions.first ?? 29
+    }
 
     var supportsWatchFaces: Bool {
         guard selectedDevice == .appleWatch, let plist else { return false }
@@ -388,14 +404,37 @@ final class GestaltViewModel: ObservableObject {
             // Apply the combined AI preset after manual region selections so
             // enabling it cannot leave a newly selected unsupported MG region.
             pending = try WatchTweakCatalog.apply(selectedWatchTweaks, to: pending, build: watch.build,
-                                                  regionIdentifier: watch.regionIdentifier)
+                                                  regionIdentifier: watch.regionIdentifier,
+                                                  ultraFaceClass: watchUltraFaceClass,
+                                                  original: selectedWatchTweaks.contains("ultra") ? try originalWatchCache() : nil,
+                                                  hardwareIdentifier: watch.hardwareIdentifier)
             if WatchTweakCatalog.resolutions.indices.contains(watchResolution) {
                 let resolution = WatchTweakCatalog.resolutions[watchResolution]
                 pending.setCacheExtra(resolution.1, forKey: "g7YQ1Djxh4YiKlEeaoGhzg")
                 pending.setCacheExtra(resolution.2, forKey: "OjzOua0LkOegX7pQdgMksw")
             }
-            saveWatch(pending) { [weak self] in self?.clearStagedChanges() }
+            saveWatch(pending) { [weak self] in
+                self?.clearStagedChanges()
+                self?.syncWatchUltraFaceClass()
+            }
         } catch { report(error) }
+    }
+
+    private func originalWatchCache() throws -> GestaltPlist {
+        // Automatic pre-write backups preserve the state before the first Ultra
+        // edit, including across reloads and switching back from class 38.
+        if let id = watchDeviceID {
+            for backup in try GestaltBackupStore.list(deviceID: id).reversed() {
+                guard let data = try? GestaltBackupStore.data(for: backup),
+                      let dict = try? WatchMGWire.decode(data) else { continue }
+                let candidate = GestaltPlist(dict: dict)
+                if WatchTweakCatalog.faceLayout(plist: candidate, build: watch.build) != nil {
+                    return candidate
+                }
+            }
+        }
+        guard let watchSnapshot else { throw WatchMGWire.failure(String(localized: "Reload Apple Watch before saving.")) }
+        return GestaltPlist(dict: try WatchMGWire.decode(watchSnapshot))
     }
 
     func restartWatchInterface() {
@@ -424,6 +463,7 @@ final class GestaltViewModel: ObservableObject {
                 watchDeviceID = id
                 watchSnapshot = data
                 plist = GestaltPlist(dict: try WatchMGWire.decode(data))
+                if !selectedWatchTweaks.contains("ultra") { syncWatchUltraFaceClass() }
                 isDirty = false
                 refreshBackups()
             } catch {

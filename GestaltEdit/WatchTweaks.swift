@@ -107,7 +107,55 @@ enum WatchTweakCatalog {
         return layout
     }
 
-    static func apply(_ identifiers: Set<String>, to plist: GestaltPlist, build: String, regionIdentifier: String = "", directory: URL? = nil) throws -> GestaltPlist {
+    static func ultraFaceClasses(plist: GestaltPlist, build: String, directory: URL? = nil) -> [Int] {
+        guard faceLayout(plist: plist, build: build, directory: directory) != nil,
+              let defaults = resource("WatchMGDefaults", directory: directory)[build] as? [String: Any],
+              let options = defaults["UltraScreenClassOptions"] as? [Int],
+              !options.isEmpty, options.allSatisfy({ [29, 38].contains($0) }) else { return [] }
+        return options
+    }
+
+    static func currentUltraFaceClass(plist: GestaltPlist, build: String, directory: URL? = nil) -> Int? {
+        guard let layout = faceLayout(plist: plist, build: build, directory: directory),
+              let offset = layout["ScreenClassOffset"] as? Int,
+              let data = plist.dict["CacheData"] as? Data,
+              plist.cacheExtra["fdh+s6j3VijuyrK7xLjd7g"] == nil else { return nil }
+        let value = integer(in: data, offset: offset)
+        return ultraFaceClasses(plist: plist, build: build, directory: directory).contains(value) ? value : nil
+    }
+
+    private static func integer(in data: Data, offset: Int) -> Int {
+        (0..<4).reduce(0) { $0 | (Int(data[offset + $1]) << ($1 * 8)) }
+    }
+
+    private static func validateUltraClass(_ value: Int, current: GestaltPlist, original: GestaltPlist?,
+                                           build: String, hardwareIdentifier: String, directory: URL?) throws {
+        let error = WatchMGWire.failure(String(localized: "The selected Ultra face layout is unavailable or the original Watch cache could not be verified. No changes were written."))
+        guard ultraFaceClasses(plist: current, build: build, directory: directory).contains(value),
+              let layout = faceLayout(plist: current, build: build, directory: directory),
+              let defaults = resource("WatchMGDefaults", directory: directory)[build] as? [String: Any],
+              let defaultClass = defaults["UltraEnabledScreenClass"] as? Int,
+              let offset = layout["ScreenClassOffset"] as? Int,
+              let data = current.dict["CacheData"] as? Data else { throw error }
+        let currentClass = integer(in: data, offset: offset)
+        let options = ultraFaceClasses(plist: current, build: build, directory: directory)
+        // Match HermesEnabler's extra checks for class 38 and switching back
+        // from it. A default class-29 enable retains the existing behavior.
+        guard value != defaultClass || (currentClass != defaultClass && options.contains(currentClass)) else { return }
+        guard !hardwareIdentifier.isEmpty,
+              let original, faceLayout(plist: original, build: build, directory: directory) != nil,
+              let originalData = original.dict["CacheData"] as? Data,
+              current.cacheExtra["fdh+s6j3VijuyrK7xLjd7g"] == nil,
+              original.cacheExtra["fdh+s6j3VijuyrK7xLjd7g"] == nil else { throw error }
+        let originalClass = integer(in: originalData, offset: offset)
+        let models = defaults["ModelValidation"] as? [String: Any]
+        let model = models?[hardwareIdentifier] as? [String: Any]
+        let expectedOriginal = model?["ExpectedOriginalScreenClass"] as? Int ?? originalClass
+        guard originalClass == expectedOriginal,
+              currentClass == expectedOriginal || currentClass == value || options.contains(currentClass) else { throw error }
+    }
+
+    static func apply(_ identifiers: Set<String>, to plist: GestaltPlist, build: String, regionIdentifier: String = "", ultraFaceClass: Int? = nil, original: GestaltPlist? = nil, hardwareIdentifier: String = "", directory: URL? = nil) throws -> GestaltPlist {
         var result = plist
         for id in identifiers.sorted() {
             guard let definition = definitions.first(where: { $0.id == id }) else { throw WatchMGWire.failure("Unknown Watch preset.") }
@@ -123,7 +171,14 @@ enum WatchTweakCatalog {
                   var data = result.dict["CacheData"] as? Data else {
                 throw WatchMGWire.failure(String(localized: "Watch face changes are unavailable on this watchOS build. No changes were written."))
             }
-            for byte in 0..<4 { data[offset + byte] = UInt8(truncatingIfNeeded: value >> (byte * 8)) }
+            var requestedValue = value
+            if id == "ultra" {
+                let selected = ultraFaceClass ?? Int(value)
+                try validateUltraClass(selected, current: result, original: original, build: build,
+                                       hardwareIdentifier: hardwareIdentifier, directory: directory)
+                requestedValue = UInt32(selected)
+            }
+            for byte in 0..<4 { data[offset + byte] = UInt8(truncatingIfNeeded: requestedValue >> (byte * 8)) }
             result.dict["CacheData"] = data
             var extra = result.cacheExtra
             extra.removeValue(forKey: id == "hermes" ? "fuKL2rMywRgQF1wowOA/cg" : "fdh+s6j3VijuyrK7xLjd7g")

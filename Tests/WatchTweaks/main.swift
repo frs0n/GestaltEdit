@@ -101,3 +101,63 @@ china.setCacheExtra("CH", forKey: regionKey)
 let unchangedRegion = try WatchTweakCatalog.apply(["keyboard"], to: china, build: "", regionIdentifier: "CN")
 precondition(unchangedRegion.cacheExtra[regionKey] as? String == "CH")
 print("Passed: combined AI flags, mainland China and all EU regional settings, existing MG China markers, supported/unknown-region preservation, legacy/current sales fields, no device identity spoofing or iPhone SiriMode changes.")
+
+var nativeOriginal = original
+nativeOriginal.cacheExtra.removeValue(forKey: "fdh+s6j3VijuyrK7xLjd7g")
+let larger = try WatchTweakCatalog.apply(["ultra"], to: nativeOriginal, build: build, ultraFaceClass: 38,
+                                        original: nativeOriginal, hardwareIdentifier: "Watch7,18", directory: resources)
+var expectedLarge = bytes
+expectedLarge[3760] = 38
+precondition(larger.dict["CacheData"] as! Data == expectedLarge)
+precondition(WatchTweakCatalog.currentUltraFaceClass(plist: larger, build: build, directory: resources) == 38)
+let smaller = try WatchTweakCatalog.apply(["ultra"], to: larger, build: build, ultraFaceClass: 29,
+                                         original: nativeOriginal, hardwareIdentifier: "Watch7,18", directory: resources)
+var expectedSmall = bytes
+expectedSmall[3760] = 29
+precondition(smaller.dict["CacheData"] as! Data == expectedSmall)
+func rejectedLayout(_ current: GestaltPlist, build: String = build, selected: Int = 38,
+                    original baseline: GestaltPlist? = nativeOriginal, hardware: String = "Watch7,18") {
+    do {
+        _ = try WatchTweakCatalog.apply(["ultra"], to: current, build: build, ultraFaceClass: selected,
+                                       original: baseline, hardwareIdentifier: hardware, directory: resources)
+        fatalError("Unsafe Ultra layout was accepted")
+    } catch {}
+}
+rejectedLayout(nativeOriginal, selected: 40)
+rejectedLayout(nativeOriginal, original: nil)
+rejectedLayout(nativeOriginal, hardware: "")
+var overridden = nativeOriginal
+overridden.setCacheExtra(35, forKey: "fdh+s6j3VijuyrK7xLjd7g")
+rejectedLayout(overridden)
+rejectedLayout(nativeOriginal, original: overridden)
+var unexpected = nativeOriginal
+var unexpectedData = bytes
+unexpectedData[3760] = 99
+unexpected.dict["CacheData"] = unexpectedData
+rejectedLayout(unexpected)
+for (name, entry) in WatchTweakCatalog.resource("WatchMGOffsets", directory: resources) {
+    let layout = entry as! [String: Any]
+    var data = Data(repeating: 0, count: layout["CacheDataLength"] as! Int)
+    data[layout["DeviceBrandPresentOffset"] as! Int] = 1
+    data[layout["ScreenClassPresentOffset"] as! Int] = 1
+    data[layout["ScreenClassOffset"] as! Int] = 35
+    let cache = GestaltPlist(dict: ["CacheData": data, "CacheUUID": layout["CacheUUID"]!, "CacheExtra": [:]])
+    let options = WatchTweakCatalog.ultraFaceClasses(plist: cache, build: name, directory: resources)
+    if options.contains(38) {
+        let result = try WatchTweakCatalog.apply(["ultra"], to: cache, build: name, ultraFaceClass: 38,
+                                                original: cache, hardwareIdentifier: "Watch7,18", directory: resources)
+        precondition(WatchTweakCatalog.currentUltraFaceClass(plist: result, build: name, directory: resources) == 38)
+    } else {
+        rejectedLayout(cache, build: name, original: cache)
+    }
+}
+// Build-specific hardware checks from the reference must not be bypassed.
+let guardedBuild = "24S5284h"
+let guardedLayout = WatchTweakCatalog.resource("WatchMGOffsets", directory: resources)[guardedBuild] as! [String: Any]
+var guardedData = Data(repeating: 0, count: guardedLayout["CacheDataLength"] as! Int)
+guardedData[guardedLayout["DeviceBrandPresentOffset"] as! Int] = 1
+guardedData[guardedLayout["ScreenClassPresentOffset"] as! Int] = 1
+guardedData[guardedLayout["ScreenClassOffset"] as! Int] = 36
+let guardedCache = GestaltPlist(dict: ["CacheData": guardedData, "CacheUUID": guardedLayout["CacheUUID"]!, "CacheExtra": [:]])
+rejectedLayout(guardedCache, build: guardedBuild, original: guardedCache)
+print("Passed: Ultra class 29/38 transitions and exact bytes, all build-specific choices, no-baseline/unknown-hardware/override/unexpected-state rejection, Watch7,18 native-class validation.")

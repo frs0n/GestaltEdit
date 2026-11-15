@@ -24,10 +24,30 @@ struct WatchToolsSections: View {
                         get: { viewModel.selectedWatchTweaks.contains(definition.id) },
                         set: { enabled in
                             if enabled { viewModel.selectedWatchTweaks.insert(definition.id) }
-                            else { viewModel.selectedWatchTweaks.remove(definition.id) }
+                            else {
+                                viewModel.selectedWatchTweaks.remove(definition.id)
+                                if definition.id == "ultra" {
+                                    viewModel.watchUltraFaceClass = viewModel.currentWatchUltraFaceClass
+                                        ?? viewModel.watchUltraFaceClassOptions.first ?? 29
+                                }
+                            }
                         }
                     ))
                     .disabled(definition.isFace && !viewModel.supportsWatchFaces)
+                }
+                if group == .faces && viewModel.watchUltraFaceClassOptions.count > 1 &&
+                    (viewModel.selectedWatchTweaks.contains("ultra") || viewModel.currentWatchUltraFaceClass != nil) {
+                    Picker("Ultra Face Layout", selection: Binding(
+                        get: { viewModel.watchUltraFaceClass },
+                        set: { layout in
+                            viewModel.watchUltraFaceClass = layout
+                            viewModel.selectedWatchTweaks.insert("ultra")
+                        }
+                    )) {
+                        ForEach(viewModel.watchUltraFaceClassOptions, id: \.self) { layout in
+                            Text("Class \(layout)").tag(layout)
+                        }
+                    }
                 }
             } header: {
                 Text(group.title)
@@ -37,6 +57,9 @@ struct WatchToolsSections: View {
                         Text("Watch face changes are unavailable on this watchOS build.")
                     } else {
                         Text("Ultra faces can prevent the Hermès Faubourg Party face from working.")
+                        if viewModel.watchUltraFaceClassOptions.count > 1 {
+                            Text("A larger Ultra layout may affect other watch faces and complications.")
+                        }
                     }
                 } else if group == .sensors {
                     Text("Capability flags do not add missing sensors or override Health permissions.")

@@ -119,6 +119,10 @@ struct AIRegionProfile: Equatable {
         plist.cacheExtra["0+nc/Udy4WNG8S+Q7a/s1A"] as? String ?? machineIdentifier
     }
 
+    static var currentDeviceMarketingName: String? {
+        profile(forProductType: machineIdentifier)?.marketingName
+    }
+
     private static var machineIdentifier: String {
         var size = 0
         guard sysctlbyname("hw.machine", nil, &size, nil, 0) == 0,

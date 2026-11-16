@@ -19,9 +19,7 @@ final class GestaltViewModel: ObservableObject {
 
     enum Device: Hashable { case iPhone, appleWatch }
     @Published private(set) var selectedDevice: Device = .iPhone
-    // Keep disclosure state independent of lazy List rows and setup-sheet
-    // presentation, which can recreate the selector even without a paired Watch.
-    @Published var isDeviceSelectorExpanded = false
+    @Published var isDeviceSelectorExpanded = true
     let watch = WatchConnection()
     private var watchDeviceID: String?
     private var watchSnapshot: Data?

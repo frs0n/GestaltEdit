@@ -10,12 +10,30 @@ struct DeviceSelector: View {
 
     var body: some View {
         Group {
-            header
+            Button {
+                withAnimation { viewModel.isDeviceSelectorExpanded.toggle() }
+            } label: {
+                HStack {
+                    Label("Devices", systemImage: "externaldrive.connected.to.line.below")
+                    Spacer()
+                    Image(systemName: viewModel.isDeviceSelectorExpanded ? "chevron.down" : "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("device-selector-toggle")
 
             if viewModel.isDeviceSelectorExpanded {
                 Button { select(.iPhone) } label: {
-                    deviceRow("iPhone / iPad", icon: "iphone", status: nil,
-                              selected: viewModel.selectedDevice == .iPhone)
+                    deviceRow(localDeviceName,
+                              icon: UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone",
+                              status: viewModel.selectedDevice == .iPhone
+                                  ? (viewModel.plist == nil ? String(localized: "Not Connected") : String(localized: "Connected"))
+                                  : nil,
+                              selected: viewModel.selectedDevice == .iPhone,
+                              connected: viewModel.selectedDevice == .iPhone && viewModel.plist != nil)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("device-selector-iphone")
@@ -29,40 +47,14 @@ struct DeviceSelector: View {
                     }
                 } label: {
                     deviceRow(watch.name, icon: "applewatch", status: watchStatus,
-                              selected: viewModel.selectedDevice == .appleWatch)
+                              selected: viewModel.selectedDevice == .appleWatch,
+                              connected: watch.isPaired && watch.isInstalled && watch.isReachable)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("device-selector-watch")
                 .disabled(viewModel.isBusy)
             }
         }
-    }
-
-    private var header: some View {
-        Button {
-            withAnimation { viewModel.isDeviceSelectorExpanded.toggle() }
-        } label: {
-            HStack {
-                Label(viewModel.selectedDevice == .appleWatch ? watch.name : viewModel.aiRegionProfile?.marketingName ?? String(localized: "Current Device"),
-                      systemImage: viewModel.selectedDevice == .appleWatch ? "applewatch" : "iphone")
-                Spacer()
-                if viewModel.isBusy {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Text(viewModel.selectedDevice == .appleWatch && !watch.isReachable
-                         ? String(localized: "Offline")
-                         : viewModel.plist == nil ? String(localized: "Not Connected") : String(localized: "Connected"))
-                        .font(.subheadline)
-                        .foregroundStyle(viewModel.plist == nil || (viewModel.selectedDevice == .appleWatch && !watch.isReachable) ? Color.secondary : Color.green)
-                }
-                Image(systemName: viewModel.isDeviceSelectorExpanded ? "chevron.down" : "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("device-selector-toggle")
         .confirmationDialog("Discard Pending Changes?", isPresented: Binding(
             get: { pendingDevice != nil }, set: { if !$0 { pendingDevice = nil } }
         ), titleVisibility: .visible) {
@@ -72,7 +64,10 @@ struct DeviceSelector: View {
             }
             Button("Cancel", role: .cancel) { pendingDevice = nil }
         }
-        .onChange(of: viewModel.isDeviceSelectorExpanded) { _, expanded in if expanded { watch.refresh() } }
+        .onAppear { watch.refresh() }
+        .onChange(of: viewModel.isDeviceSelectorExpanded) { _, expanded in
+            if expanded { watch.refresh() }
+        }
         .onChange(of: scenePhase) { _, phase in if phase == .active { watch.refresh() } }
         .sheet(isPresented: $showsInstallation) {
             NavigationStack {
@@ -109,6 +104,10 @@ struct DeviceSelector: View {
         }
     }
 
+    private var localDeviceName: String {
+        AIRegionProfile.currentDeviceMarketingName ?? UIDevice.current.model
+    }
+
     private func select(_ device: GestaltViewModel.Device) {
         guard device != viewModel.selectedDevice else { return }
         if viewModel.isDirty || viewModel.hasStagedTweaks { pendingDevice = device }
@@ -123,19 +122,22 @@ struct DeviceSelector: View {
         return watch.isReachable ? String(localized: "Connected") : String(localized: "Offline")
     }
 
-    private func deviceRow(_ title: String, icon: String, status: String?, selected: Bool) -> some View {
+    private func deviceRow(_ title: String, icon: String, status: String?, selected: Bool, connected: Bool) -> some View {
         HStack {
             Label(title, systemImage: icon)
             Spacer()
-            if let status {
-                Text(status).font(.subheadline).foregroundStyle(.secondary)
+            if selected && viewModel.isBusy {
+                ProgressView().controlSize(.small)
+            } else if let status {
+                Text(status).font(.subheadline).foregroundStyle(connected ? Color.blue : Color.secondary)
             }
             Image(systemName: "checkmark")
-                .foregroundStyle(.tint)
+                .foregroundStyle(Color.blue)
                 .opacity(selected ? 1 : 0)
                 .accessibilityHidden(true)
         }
         .foregroundStyle(.primary)
         .contentShape(Rectangle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

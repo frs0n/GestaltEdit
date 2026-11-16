@@ -34,7 +34,6 @@
 
 "Back Up Current MobileGestalt" = "备份当前 MobileGestalt";
 "Import Backup" = "导入备份";
-"Importing only adds a file to the backup library. It does not write immediately. The original plist is also backed up before every write." = "导入只会将文件加入备份库，不会立即写入。每次写入前也会自动备份原始 plist。";
 "Local Backups" = "本机备份";
 "No Backups" = "暂无备份";
 "Restore This MobileGestalt Backup?" = "恢复这份 MobileGestalt 备份？";

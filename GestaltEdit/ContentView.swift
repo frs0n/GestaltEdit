@@ -467,8 +467,6 @@ private struct BackupLibrary: View {
                         Label("Import Backup", systemImage: "square.and.arrow.down")
                     }
                     .disabled(viewModel.isBusy)
-                } footer: {
-                    Text("Importing only adds a file to the backup library. It does not write immediately. The original plist is also backed up before every write.")
                 }
 
                 if !identityBackups.isEmpty {

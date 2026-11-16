@@ -81,3 +81,4 @@
 "Saved to Apple Watch and verified, but the automatic interface restart could not be confirmed. Restart Apple Watch manually if needed.\n%@" = "已写入 Apple Watch 并验证，但无法确认界面是否自动重启。如有需要，请手动重新启动 Apple Watch。\n%@";
 "Saved. Waiting for the iPhone to restart the watch interface." = "已保存，正在等待 iPhone 自动重启手表界面。";
 "The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring." = "恢复前会先备份 Apple Watch 当前的文件，恢复后会自动重启手表界面。";
+"watchOS 26 is not supported." = "暂不支持 watchOS 26。";

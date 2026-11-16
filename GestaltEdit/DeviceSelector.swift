@@ -10,20 +10,7 @@ struct DeviceSelector: View {
 
     var body: some View {
         Group {
-            Button {
-                withAnimation { viewModel.isDeviceSelectorExpanded.toggle() }
-            } label: {
-                HStack {
-                    Label("Devices", systemImage: "externaldrive.connected.to.line.below")
-                    Spacer()
-                    Image(systemName: viewModel.isDeviceSelectorExpanded ? "chevron.down" : "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("device-selector-toggle")
+            selectorHeader
 
             if viewModel.isDeviceSelectorExpanded {
                 Button { select(.iPhone) } label: {
@@ -55,6 +42,25 @@ struct DeviceSelector: View {
                 .disabled(viewModel.isBusy)
             }
         }
+    }
+
+    // Keep presentation modifiers on one stable List row. A Group forwards
+    // them to every child, creating competing sheet presentation hosts.
+    private var selectorHeader: some View {
+        Button {
+            withAnimation { viewModel.isDeviceSelectorExpanded.toggle() }
+        } label: {
+            HStack {
+                Label("Devices", systemImage: "externaldrive.connected.to.line.below")
+                Spacer()
+                Image(systemName: viewModel.isDeviceSelectorExpanded ? "chevron.down" : "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("device-selector-toggle")
         .confirmationDialog("Discard Pending Changes?", isPresented: Binding(
             get: { pendingDevice != nil }, set: { if !$0 { pendingDevice = nil } }
         ), titleVisibility: .visible) {

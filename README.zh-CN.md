@@ -54,6 +54,8 @@
 
 ## Apple Watch
 
+暂不支持 watchOS 26。
+
 在 Tools 顶部展开设备连接栏，选择当前与 iPhone 配对且启用的 Apple Watch。
 
 如果需要使用 Apple Watch，签名建议使用 [WatchBridge](https://github.com/AdminZachary/WatchBridge)。这是一个社区工具，可以开启开发者模式，并安装包含 iPhone 端程序和 Watch 端程序的 IPA。它与此项目无关。

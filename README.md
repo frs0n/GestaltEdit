@@ -54,6 +54,8 @@ Edit `com.apple.MobileGestalt.plist` on-device. Capability presets, a full field
 
 ## Apple Watch
 
+watchOS 26 is not supported.
+
 Expand the device connection row at the top of Tools and select the active Apple Watch paired with your iPhone.
 
 For Apple Watch support, we recommend signing with [WatchBridge](https://github.com/AdminZachary/WatchBridge). This community tool can enable Developer Mode and install an IPA containing both the iPhone app and the Watch app. It is not affiliated with this project.

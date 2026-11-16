@@ -318,3 +318,15 @@
 "First, this will temporarily spoof an eligible device. Face ID and dictation may stop working while spoofed. Complete the Siri AI model download in Settings, then open Restore and use “After Model Download · Remove Device Spoof”. After removing the spoof and restarting, Face ID and dictation will work again while Siri AI settings stay enabled. A separate full backup is also saved before setup. System instability is possible." = "将先临时伪装为支持的机型，期间面容 ID 和听写可能失效。请先在设置中完成 Siri AI 模型下载，再到“恢复”使用“模型下载后 · 撤销机型伪装”。撤销伪装并重启后，面容 ID 和听写会恢复，Siri AI 配置会保留。开启前还会按原方式保存一份完整备份。此过程可能导致系统不稳定。";
 "After the Siri AI model download finishes, use this backup to remove device spoofing. Face ID and dictation will work again after restarting, while Siri AI settings stay enabled." = "完成 Siri AI 模型下载后，使用此备份撤销机型伪装。重启后面容 ID 和听写会恢复，Siri AI 配置会保留。";
 "Complete the Siri AI model download first. Your original device identity will be restored, and Face ID and dictation will work again after restarting. SiriMode and other AI settings stay enabled. The current file will be backed up before writing." = "请先完成 Siri AI 模型下载。此操作会恢复原设备身份，重启后面容 ID 和听写会恢复。SiriMode 和其他 AI 配置会保留。写入前会备份当前文件。";
+
+/* Backup history */
+"Reason Not Recorded" = "未记录修改原因";
+"Manual Backup" = "手动备份";
+"Imported Backup" = "导入备份";
+"Field Changes" = "字段修改";
+"Changes" = "修改内容";
+"Requested Changes" = "拟写入的修改";
+"No Field Changes" = "无字段变化";
+"Not Present" = "不存在";
+"Changes to" = "改为";
+"Backup Details" = "备份详情";

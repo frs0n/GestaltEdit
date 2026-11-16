@@ -447,7 +447,6 @@ private struct TweakToggle: View {
 
 private struct BackupLibrary: View {
     @EnvironmentObject private var viewModel: GestaltViewModel
-    @State private var backupToRestore: GestaltBackup?
     @State private var showsBackupImporter = false
 
     var body: some View {
@@ -503,32 +502,7 @@ private struct BackupLibrary: View {
                     viewModel.notice = GestaltNotice(kind: .error, message: error.localizedDescription)
                 }
             }
-            .confirmationDialog(
-                backupToRestore?.purpose == .siriAIIdentityRestore
-                    ? String(localized: "Remove Device Spoof?")
-                    : String(localized: "Restore This MobileGestalt Backup?"),
-                isPresented: Binding(
-                    get: { backupToRestore != nil },
-                    set: { if !$0 { backupToRestore = nil } }
-                ),
-                titleVisibility: .visible
-            ) {
-                Button(backupToRestore?.purpose == .siriAIIdentityRestore
-                       ? String(localized: "Remove Device Spoof")
-                       : String(localized: "Restore and Write"), role: .destructive) {
-                    if let backupToRestore { viewModel.restore(backupToRestore) }
-                    backupToRestore = nil
-                }
-                Button("Cancel", role: .cancel) { backupToRestore = nil }
-            } message: {
-                if backupToRestore?.purpose == .siriAIIdentityRestore {
-                    Text("Complete the Siri AI model download first. Your original device identity will be restored, and Face ID and dictation will work again after restarting. SiriMode and other AI settings stay enabled. The current file will be backed up before writing.")
-                } else {
-                    Text(viewModel.selectedDevice == .appleWatch
-                         ? String(localized: "The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring.")
-                         : String(localized: "The current file will be backed up first. SpringBoard will refresh automatically after restoring."))
-                }
-            }
+
         }
     }
     private var identityBackups: [GestaltBackup] {
@@ -541,7 +515,7 @@ private struct BackupLibrary: View {
 
     private func backupRows(_ backups: [GestaltBackup]) -> some View {
         ForEach(backups) { backup in
-            BackupRow(backup: backup) { backupToRestore = backup }
+            BackupRow(backup: backup)
         }
         .onDelete { offsets in
             for index in offsets { viewModel.delete(backups[index]) }
@@ -552,34 +526,108 @@ private struct BackupLibrary: View {
 
 private struct BackupRow: View {
     let backup: GestaltBackup
-    let restore: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                if let title = backup.displayTitle {
-                    Text(title)
-                    Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
-                }
-                Text(ByteCountFormatter.string(fromByteCount: backup.byteCount, countStyle: .file))
+        NavigationLink {
+            BackupDetail(backup: backup)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(backup.reason)
+                Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Spacer()
-            ShareLink(item: backup.url) {
-                Image(systemName: "square.and.arrow.up")
-            }
-            .accessibilityLabel("Export Backup")
-            Button("Restore", action: restore)
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .controlSize(.small)
-            .accessibilityLabel("Restore Backup")
         }
+    }
+}
+
+private struct BackupDetail: View {
+    @EnvironmentObject private var viewModel: GestaltViewModel
+    @State private var showsRestoreConfirmation = false
+    @State private var showsChanges = false
+    let backup: GestaltBackup
+
+    var body: some View {
+        List {
+            Section {
+                Text(backup.reason)
+                Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
+                    .foregroundStyle(.secondary)
+                Text(ByteCountFormatter.string(fromByteCount: backup.byteCount, countStyle: .file))
+                    .foregroundStyle(.secondary)
+            }
+            if let record = backup.record,
+               record.source == .modification || record.source == .restore || record.source == .identityRecovery {
+                Section {
+                    DisclosureGroup(isExpanded: $showsChanges) {
+                        if record.changes.isEmpty {
+                            Text("No Field Changes").foregroundStyle(.secondary)
+                        }
+                        ForEach(record.changes) { change in
+                            VStack(alignment: .leading, spacing: 8) {
+                                if let title = fieldTitle(for: change) {
+                                    Text(title)
+                                    Text(change.path.joined(separator: " › "))
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text(change.path.joined(separator: " › "))
+                                        .font(.subheadline.monospaced())
+                                }
+                                Text(change.before ?? String(localized: "Not Present"))
+                                    .foregroundStyle(.secondary)
+                                Image(systemName: "arrow.down").foregroundStyle(.tertiary)
+                                    .accessibilityLabel("Changes to")
+                                Text(change.after ?? String(localized: "Not Present"))
+                            }
+                            .textSelection(.enabled)
+                            .padding(.vertical, 4)
+                        }
+                    } label: {
+                        Text(record.verified ? String(localized: "Changes") : String(localized: "Requested Changes"))
+                    }
+                }
+            }
+            Section {
+                ShareLink(item: backup.url) { Label("Export Backup", systemImage: "square.and.arrow.up") }
+                Button("Restore Backup") { showsRestoreConfirmation = true }
+                    .disabled(viewModel.isBusy)
+                    .confirmationDialog(
+                        backup.purpose == .siriAIIdentityRestore
+                            ? String(localized: "Remove Device Spoof?")
+                            : String(localized: "Restore This MobileGestalt Backup?"),
+                        isPresented: $showsRestoreConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button(backup.purpose == .siriAIIdentityRestore
+                               ? String(localized: "Remove Device Spoof")
+                               : String(localized: "Restore and Write"), role: .destructive) {
+                            viewModel.restore(backup)
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        if backup.purpose == .siriAIIdentityRestore {
+                            Text("Complete the Siri AI model download first. Your original device identity will be restored, and Face ID and dictation will work again after restarting. SiriMode and other AI settings stay enabled. The current file will be backed up before writing.")
+                        } else {
+                            Text(viewModel.selectedDevice == .appleWatch
+                                 ? String(localized: "The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring.")
+                                 : String(localized: "The current file will be backed up first. SpringBoard will refresh automatically after restoring."))
+                        }
+                    }
+            }
+        }
+        .navigationTitle("Backup Details")
+        .navigationBarTitleDisplayMode(.inline)
+
+    }
+
+    private func fieldTitle(for change: GestaltBackupChange) -> String? {
+        guard change.path.count == 2, change.path.first == "CacheExtra", let key = change.path.dropFirst().first else {
+            return nil
+        }
+        let matches = GestaltTweakCatalog.definitions.filter { $0.values[key] != nil }
+        if matches.count == 1 { return matches[0].title }
+        return WatchTweakCatalog.definitions.first { $0.keys.contains(key) }?.title
     }
 }
 

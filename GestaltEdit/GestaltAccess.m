@@ -90,9 +90,19 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 
 #pragma mark - Connection
 
++ (BOOL)supportsDeviceAccess
+{
+    return NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27;
+}
+
 - (BOOL)connectWithError:(NSError **)error
 {
     @synchronized (self) {
+        if (!GestaltAccess.supportsDeviceAccess) {
+            if (error) *error = GestaltError(10, NSLocalizedString(@"On-device MobileGestalt editing requires iOS / iPadOS 27 or later. iOS / iPadOS 26 is not supported.", nil));
+            return NO;
+        }
+
         if (self.isConnected && _hasSandboxHandle && self.plistPath.length > 0 &&
             GestaltCanOpenReadWrite(self.plistPath)) {
             if (error) *error = nil;

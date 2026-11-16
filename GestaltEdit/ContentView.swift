@@ -7,6 +7,13 @@ struct ContentView: View {
 
     var body: some View {
         Group {
+            if !GestaltAccess.supportsDeviceAccess {
+                ContentUnavailableView(
+                    "iOS 26 Is Not Supported",
+                    systemImage: "iphone.slash",
+                    description: Text("On-device MobileGestalt editing requires iOS / iPadOS 27 or later. iOS / iPadOS 26 is not supported.")
+                )
+            } else {
                 TabView {
                     TweakWorkbench()
                         .tabItem { Label("Tools", systemImage: "switch.2") }
@@ -19,6 +26,7 @@ struct ContentView: View {
                 }
                 .disabled(viewModel.isBusy)
                 .task { viewModel.load() }
+            }
         }
         .overlay {
             if viewModel.isRespringing {

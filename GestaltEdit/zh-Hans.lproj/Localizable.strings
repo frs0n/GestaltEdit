@@ -332,3 +332,5 @@
 "Backup Details" = "备份详情";
 
 "Devices" = "设备";
+"iOS 26 Is Not Supported" = "不支持 iOS 26";
+"On-device MobileGestalt editing requires iOS / iPadOS 27 or later. iOS / iPadOS 26 is not supported." = "设备端 MobileGestalt 编辑需要 iOS / iPadOS 27 或更高版本，不支持 iOS / iPadOS 26。";

@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)shared;
 
+@property (class, nonatomic, readonly) BOOL supportsDeviceAccess;
+
 /// Acquires a worse_query lease and verifies the plist is writable. Idempotent.
 - (BOOL)connectWithError:(NSError **)error;
 

@@ -137,12 +137,63 @@ struct AIRegionConfiguration: Equatable {
     let spoofedHardwareModel: String?
     let spoofedCPUModel: String?
     var enablesSiriMode = false
+    var changesRegion = false
+    var usesTwoStageSetup = false
 
     var requiresDeviceSpoofing: Bool { spoofedProductType != nil }
 
+    // Device-region adjustment is conditional. This does not read or change
+    // Apple Account region or establish server-side Siri AI eligibility.
     static func resolve(
         for plist: GestaltPlist,
         osMajorVersion: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+    ) -> AIRegionConfiguration {
+        var configuration = deviceConfiguration(for: plist, osMajorVersion: osMajorVersion)
+        // Only explicit MobileGestalt mainland-China markers trigger a
+        // device-region override. Locale is a formatting preference.
+        let mainlandDevice = regionKeys.prefix(3).contains { key in
+            guard let value = plist.cacheExtra[key] as? String else { return false }
+            return value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().split(separator: "/").first == "CH"
+        }
+        configuration.changesRegion = mainlandDevice
+        configuration.usesTwoStageSetup = osMajorVersion == 27 && configuration.requiresDeviceSpoofing
+        return configuration
+    }
+
+    private static let regionKeys = [
+        "h63QSdBCiT/z0WU6rdQv6Q", "yK+xavymRGZ3xWc1tb8XDg",
+        "zHeENZu+wbg7PUprwNwBWg", "97JDvERpVwO+GHtthIh7hA"
+    ]
+
+    static func regionValues(in plist: GestaltPlist) -> NSDictionary {
+        NSDictionary(dictionary: plist.cacheExtra.filter { regionKeys.contains($0.key) })
+    }
+
+    func apply(to plist: inout GestaltPlist) {
+        if let productType = spoofedProductType,
+           let hardwareModel = spoofedHardwareModel,
+           let cpuModel = spoofedCPUModel {
+            plist.setCacheExtra(1, forKey: "A62OafQ85EJAiiqKn4agtg")
+            plist.setCacheExtra(productType, forKey: "h9jDsbgj7xIVeIQ8S3/X3Q")
+            plist.setCacheExtra(hardwareModel, forKey: "oYicEKzVTz4/CxxE05pEgQ")
+            plist.setCacheExtra(cpuModel, forKey: "5pYKlGnYYBzGvAlIU8RjEQ")
+        }
+        if enablesSiriMode {
+            plist.setCacheExtra(2, forKey: "a3n5T9sFtlyQ74NEp9ESxg")
+        }
+        if changesRegion {
+            plist.setCacheExtra("LL", forKey: "h63QSdBCiT/z0WU6rdQv6Q")
+            plist.setCacheExtra("LL/A", forKey: "yK+xavymRGZ3xWc1tb8XDg")
+            if plist.cacheExtra["zHeENZu+wbg7PUprwNwBWg"] != nil {
+                plist.setCacheExtra("LL/A", forKey: "zHeENZu+wbg7PUprwNwBWg")
+            }
+            plist.setCacheExtra(profile.regulatoryModel, forKey: "97JDvERpVwO+GHtthIh7hA")
+        }
+    }
+
+    private static func deviceConfiguration(
+        for plist: GestaltPlist,
+        osMajorVersion: Int
     ) -> AIRegionConfiguration {
         if let profile = AIRegionProfile(plist: plist) {
             return AIRegionConfiguration(
@@ -153,25 +204,24 @@ struct AIRegionConfiguration: Equatable {
             )
         }
 
-        // iOS/iPadOS 27 still needs the US region configuration and SiriMode,
-        // but no longer needs product, hardware or CPU identity spoofing.
-        let spoofsIdentity = osMajorVersion != 27
+        // Unsupported devices need a temporary eligible identity while models
+        // download. A separate identity-only restore removes it afterwards.
         let productType = AIRegionProfile.detectedProductType(in: plist)
         if productType.hasPrefix("iPad") {
             return AIRegionConfiguration(
                 profile: AIRegionProfile(marketingName: "iPad mini (A17 Pro)", regulatoryModel: "A2993"),
-                spoofedProductType: spoofsIdentity ? "iPad16,1" : nil,
-                spoofedHardwareModel: spoofsIdentity ? "J410AP" : nil,
-                spoofedCPUModel: spoofsIdentity ? "t8130" : nil,
+                spoofedProductType: "iPad16,1",
+                spoofedHardwareModel: "J410AP",
+                spoofedCPUModel: "t8130",
                 enablesSiriMode: true
             )
         }
 
         return AIRegionConfiguration(
             profile: AIRegionProfile(marketingName: "iPhone 15 Pro", regulatoryModel: "A2848"),
-            spoofedProductType: spoofsIdentity ? "iPhone16,1" : nil,
-            spoofedHardwareModel: spoofsIdentity ? "D83AP" : nil,
-            spoofedCPUModel: spoofsIdentity ? "t8130" : nil,
+            spoofedProductType: "iPhone16,1",
+            spoofedHardwareModel: "D83AP",
+            spoofedCPUModel: "t8130",
             enablesSiriMode: true
         )
     }
@@ -381,5 +431,31 @@ struct GestaltPlist {
         var values = cacheExtra
         values.removeValue(forKey: key)
         cacheExtra = values
+    }
+}
+
+// Restore only fields changed by the identity spoof, preserving AI settings,
+// downloaded-model eligibility and any unrelated edits made after setup.
+enum SiriAIIdentityRestore {
+    static let keys = ["h9jDsbgj7xIVeIQ8S3/X3Q", "oYicEKzVTz4/CxxE05pEgQ", "5pYKlGnYYBzGvAlIU8RjEQ"]
+
+    static func restoring(_ current: GestaltPlist, from original: GestaltPlist) -> GestaltPlist {
+        var restored = current
+        for key in keys {
+            if let value = original.cacheExtra[key] {
+                restored.setCacheExtra(value, forKey: key)
+            } else {
+                restored.removeCacheExtraValue(forKey: key)
+            }
+        }
+        return restored
+    }
+
+    static func sameDevice(_ lhs: GestaltPlist, _ rhs: GestaltPlist) -> Bool {
+        AIRegionProfile.detectedProductType(in: lhs) == AIRegionProfile.detectedProductType(in: rhs)
+    }
+
+    static func values(in plist: GestaltPlist) -> NSDictionary {
+        NSDictionary(dictionary: plist.cacheExtra.filter { keys.contains($0.key) })
     }
 }

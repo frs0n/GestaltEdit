@@ -1,5 +1,10 @@
 import Foundation
 
+enum GestaltBackupPurpose: String {
+    case standard = "MobileGestalt"
+    case siriAIIdentityRestore = "SiriAI_RestoreIdentity_AfterModelDownload"
+}
+
 struct GestaltBackup: Identifiable, Hashable {
     let url: URL
     let createdAt: Date
@@ -7,16 +12,26 @@ struct GestaltBackup: Identifiable, Hashable {
 
     var id: URL { url }
     var name: String { url.deletingPathExtension().lastPathComponent }
+    var purpose: GestaltBackupPurpose {
+        if name.hasPrefix(GestaltBackupPurpose.siriAIIdentityRestore.rawValue + "_") { return .siriAIIdentityRestore }
+        return .standard
+    }
+    var displayTitle: String? {
+        switch purpose {
+        case .standard: nil
+        case .siriAIIdentityRestore: String(localized: "After Model Download · Remove Device Spoof")
+        }
+    }
 }
 
 enum GestaltBackupStore {
-    static func create(from data: Data, deviceID: String? = nil) throws -> GestaltBackup {
+    static func create(from data: Data, deviceID: String? = nil, purpose: GestaltBackupPurpose = .standard) throws -> GestaltBackup {
         let directory = try backupDirectory(deviceID: deviceID)
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss-SSS"
         let url = directory
-            .appendingPathComponent("MobileGestalt_\(formatter.string(from: Date()))")
+            .appendingPathComponent("\(purpose.rawValue)_\(formatter.string(from: Date()))")
             .appendingPathExtension("plist")
         try data.write(to: url, options: .atomic)
         return try metadata(for: url)

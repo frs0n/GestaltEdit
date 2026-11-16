@@ -52,10 +52,22 @@ private struct TweakWorkbench: View {
                 } else if viewModel.plist != nil {
                     tweakSection(.region)
                     dynamicIslandSection
-                    modelNameSection
-
-                    ForEach(GestaltTweakCategory.allCases.filter { $0 != .region }) { category in
-                        tweakSection(category)
+                    tweakSection(.display)
+                    tweakSection(.ipad)
+                    tweakSection(.hardware)
+                    tweakSection(.audio)
+                    Section {
+                        DisclosureGroup("Settings Shortcuts") {
+                            tweakRows(.settings)
+                        }
+                        DisclosureGroup("Internal & Research") {
+                            tweakRows(.internalFeatures)
+                        }
+                        DisclosureGroup("Device Name") {
+                            modelNameControls
+                        }
+                    } header: {
+                        Text("Advanced")
                     }
                 }
 
@@ -97,16 +109,40 @@ private struct TweakWorkbench: View {
     }
 
     private func tweakSection(_ category: GestaltTweakCategory) -> some View {
-        let definitions = GestaltTweakCatalog.definitions.filter { $0.category == category }
-        return Section(category.label) {
-            ForEach(definitions) { definition in
-                TweakToggle(
-                    definition: definition,
-                    isOn: Binding(
-                        get: { viewModel.selectedTweaks.contains(definition.id) },
-                        set: { viewModel.setTweak(definition.id, enabled: $0) }
-                    )
-                )
+        Section(category.label) {
+            if category == .ipad {
+                tweakRow(.iPadOS)
+                DisclosureGroup("Individual iPad Options") {
+                    tweakRow(.stageManager)
+                    tweakRow(.iPadApps)
+                }
+            } else {
+                tweakRows(category)
+            }
+            if category == .display {
+                Picker("Liquid Glass", selection: Binding<Int>(
+                    get: {
+                        if viewModel.selectedTweaks.contains(.enableLiquidGlassLowPerformance) { return 1 }
+                        if viewModel.selectedTweaks.contains(.disableLiquidGlassLowPerformance) { return 0 }
+                        return -1
+                    },
+                    set: { value in
+                        viewModel.setTweak(.enableLiquidGlassLowPerformance, enabled: false)
+                        viewModel.setTweak(.disableLiquidGlassLowPerformance, enabled: false)
+                        if value >= 0 {
+                            viewModel.setTweak(value == 1 ? .enableLiquidGlassLowPerformance : .disableLiquidGlassLowPerformance, enabled: true)
+                        }
+                    }
+                )) {
+                    Text("No Change").tag(-1)
+                    Text("Reduced Effects").tag(1)
+                    Text("Full Effects").tag(0)
+                }
+                DisclosureGroup("AOD Options") {
+                    tweakRow(.alwaysOnDisplayVibrancy)
+                    tweakRow(.aodHighLuminance)
+                    tweakRow(.aodFlipbook)
+                }
             }
             if category == .region {
                 Toggle(
@@ -117,7 +153,7 @@ private struct TweakWorkbench: View {
                 ) {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            Text("Enable Siri AI (US Region)")
+                            Text("Enable Siri AI")
                             if viewModel.requiresForcedAIEnable {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.caption)
@@ -125,15 +161,48 @@ private struct TweakWorkbench: View {
                                     .accessibilityLabel("High Risk")
                             }
                         }
-                        if viewModel.requiresForcedAIEnable {
-                            Text("Unsupported device: force enable with device identity spoofing. Face ID or system stability may be affected.")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
                     }
                 }
+                Picker("Device Region", selection: Binding<String?>(
+                    get: { viewModel.stagedAIRegionPresetID },
+                    set: { viewModel.setRegionPreset($0) }
+                )) {
+                    Text("No Change").tag(String?.none)
+                    ForEach(GestaltRegionPreset.all) { region in
+                        Text(region.title).tag(String?.some(region.id))
+                    }
+                }
+                .disabled(viewModel.stagesAIRegion)
             }
+        }
+    }
+
+    private func tweakRows(_ category: GestaltTweakCategory) -> some View {
+        let customControls: Set<GestaltTweakID> = [
+            .supportsDynamicIsland, .alwaysOnDisplayVibrancy, .aodHighLuminance, .aodFlipbook,
+            .enableLiquidGlassLowPerformance, .disableLiquidGlassLowPerformance
+        ]
+        let definitions = GestaltTweakCatalog.definitions.filter {
+            $0.category == category && !customControls.contains($0.id) && $0.isAvailable()
+        }
+        return ForEach(definitions) { definition in
+            tweakRow(definition.id)
+        }
+    }
+
+    @ViewBuilder
+    private func tweakRow(_ id: GestaltTweakID) -> some View {
+        if let definition = GestaltTweakCatalog.definition(for: id), definition.isAvailable() {
+            let included = (viewModel.selectedTweaks.contains(.iPadOS)
+                && GestaltTweakCatalog.iPadIncludedTweaks.contains(id))
+            TweakToggle(
+                definition: definition,
+                isOn: Binding(
+                    get: { included || viewModel.selectedTweaks.contains(id) },
+                    set: { viewModel.setTweak(id, enabled: $0) }
+                ),
+                included: included
+            )
         }
     }
 
@@ -166,27 +235,28 @@ private struct TweakWorkbench: View {
     }
 
     private var dynamicIslandSection: some View {
-        Section {
-            Picker("Device Subtype", selection: $viewModel.dynamicIslandSubtype) {
-                Text("No Change").tag(Int?.none)
-                ForEach(DynamicIslandOption.all) { option in
-                    Text("\(option.subtype) · \(option.title)").tag(Int?.some(option.subtype))
+        Section("Dynamic Island") {
+            tweakRow(.supportsDynamicIsland)
+            if viewModel.selectedTweaks.contains(.supportsDynamicIsland) || viewModel.dynamicIslandSubtype != nil {
+                Picker("Island Layout", selection: $viewModel.dynamicIslandSubtype) {
+                    Text("Keep Current Layout").tag(Int?.none)
+                    ForEach(DynamicIslandOption.all) { option in
+                        Text(option.title).tag(Int?.some(option.subtype))
+                    }
                 }
             }
-        } header: {
-            Text("Dynamic Island")
-        } footer: {
-            Text("Selecting a subtype writes ArtworkDeviceSubType and the Dynamic Island support flag.")
+        }
+        .onChange(of: viewModel.selectedTweaks.contains(.supportsDynamicIsland)) { _, enabled in
+            if !enabled { viewModel.dynamicIslandSubtype = nil }
         }
     }
 
-    private var modelNameSection: some View {
-        Section("Device Name") {
-            Toggle("Change model name in About", isOn: $viewModel.changesModelName)
-            if viewModel.changesModelName {
-                TextField("Model Name", text: $viewModel.modelName)
-                    .textInputAutocapitalization(.words)
-            }
+    @ViewBuilder
+    private var modelNameControls: some View {
+        Toggle("Change model name in About", isOn: $viewModel.changesModelName)
+        if viewModel.changesModelName {
+            TextField("Model Name", text: $viewModel.modelName)
+                .textInputAutocapitalization(.words)
         }
     }
 
@@ -195,9 +265,6 @@ private struct TweakWorkbench: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(format: String(localized: "%d pending changes"), viewModel.stagedChangeCount))
                     .font(.subheadline.weight(.semibold))
-                Text("Automatic backup before writing")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             Spacer()
             Button("Apply") { viewModel.applySelectedTweaks() }
@@ -337,23 +404,43 @@ private struct TweakToggle: View {
     let definition: GestaltTweakDefinition
     @Binding var isOn: Bool
 
+    var included = false
+    @State private var showsDetails = false
+
     var body: some View {
-        Toggle(isOn: $isOn) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(definition.title)
-                    if definition.isRisky {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .accessibilityLabel("High Risk")
+        HStack(spacing: 10) {
+            Toggle(isOn: $isOn) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(definition.title)
+                        if definition.isRisky {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .accessibilityLabel("High Risk")
+                        }
                     }
                 }
-                Text(definition.detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
+            .disabled(included)
+            if definition.isRisky || definition.showsDetails || [.supportsDynamicIsland, .chargeLimit, .alwaysOnDisplayVibrancy].contains(definition.id) {
+                Button {
+                    showsDetails = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .frame(minWidth: 32, minHeight: 44)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(Text("About \(definition.title)"))
+            }
+        }
+        .onChange(of: isOn) { _, enabled in
+            if enabled && definition.isRisky && !included { showsDetails = true }
+        }
+        .alert(definition.title, isPresented: $showsDetails) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(definition.detail)
         }
     }
 }
@@ -384,19 +471,22 @@ private struct BackupLibrary: View {
                     Text("Importing only adds a file to the backup library. It does not write immediately. The original plist is also backed up before every write.")
                 }
 
+                if !identityBackups.isEmpty {
+                    Section {
+                        backupRows(identityBackups)
+                    } header: {
+                        Text("Siri AI")
+                    } footer: {
+                        Text("After the Siri AI model download finishes, use this backup to remove device spoofing. Face ID and dictation will work again after restarting, while Siri AI settings stay enabled.")
+                    }
+                }
+
                 Section("Local Backups") {
-                    if viewModel.backups.isEmpty {
+                    if ordinaryBackups.isEmpty {
                         Label("No Backups", systemImage: "archivebox")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(viewModel.backups) { backup in
-                            BackupRow(backup: backup) {
-                                backupToRestore = backup
-                            }
-                        }
-                        .onDelete { offsets in
-                            for index in offsets { viewModel.delete(viewModel.backups[index]) }
-                        }
+                        backupRows(ordinaryBackups)
                     }
                 }
             }
@@ -416,25 +506,50 @@ private struct BackupLibrary: View {
                 }
             }
             .confirmationDialog(
-                "Restore This MobileGestalt Backup?",
+                backupToRestore?.purpose == .siriAIIdentityRestore
+                    ? String(localized: "Remove Device Spoof?")
+                    : String(localized: "Restore This MobileGestalt Backup?"),
                 isPresented: Binding(
                     get: { backupToRestore != nil },
                     set: { if !$0 { backupToRestore = nil } }
                 ),
                 titleVisibility: .visible
             ) {
-                Button("Restore and Write", role: .destructive) {
+                Button(backupToRestore?.purpose == .siriAIIdentityRestore
+                       ? String(localized: "Remove Device Spoof")
+                       : String(localized: "Restore and Write"), role: .destructive) {
                     if let backupToRestore { viewModel.restore(backupToRestore) }
                     backupToRestore = nil
                 }
                 Button("Cancel", role: .cancel) { backupToRestore = nil }
             } message: {
-                Text(viewModel.selectedDevice == .appleWatch
-                     ? String(localized: "The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring.")
-                     : String(localized: "The current file will be backed up first. SpringBoard will refresh automatically after restoring."))
+                if backupToRestore?.purpose == .siriAIIdentityRestore {
+                    Text("Complete the Siri AI model download first. Your original device identity will be restored, and Face ID and dictation will work again after restarting. SiriMode and other AI settings stay enabled. The current file will be backed up before writing.")
+                } else {
+                    Text(viewModel.selectedDevice == .appleWatch
+                         ? String(localized: "The current Apple Watch file will be backed up first. The watch interface will restart automatically after restoring.")
+                         : String(localized: "The current file will be backed up first. SpringBoard will refresh automatically after restoring."))
+                }
             }
         }
     }
+    private var identityBackups: [GestaltBackup] {
+        viewModel.backups.filter { $0.purpose == .siriAIIdentityRestore }
+    }
+
+    private var ordinaryBackups: [GestaltBackup] {
+        viewModel.backups.filter { $0.purpose == .standard }
+    }
+
+    private func backupRows(_ backups: [GestaltBackup]) -> some View {
+        ForEach(backups) { backup in
+            BackupRow(backup: backup) { backupToRestore = backup }
+        }
+        .onDelete { offsets in
+            for index in offsets { viewModel.delete(backups[index]) }
+        }
+    }
+
 }
 
 private struct BackupRow: View {
@@ -444,7 +559,14 @@ private struct BackupRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
+                if let title = backup.displayTitle {
+                    Text(title)
+                    Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(backup.createdAt, format: .dateTime.year().month().day().hour().minute().second())
+                }
                 Text(ByteCountFormatter.string(fromByteCount: backup.byteCount, countStyle: .file))
                     .font(.caption)
                     .foregroundStyle(.secondary)

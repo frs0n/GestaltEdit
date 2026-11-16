@@ -23,7 +23,9 @@ struct GestaltWatchApp: App {
 // queued/background application contexts never execute writes.
 @MainActor
 final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
-    @Published var status = String(localized: "Open GestaltEdit on your iPhone to manage this watch.")
+    @Published var status = ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 26
+        ? String(localized: "watchOS 26 is not supported.")
+        : String(localized: "Open GestaltEdit on your iPhone to manage this watch.")
     private let access = GestaltAccess.shared()
     private let identifier: String
     private lazy var service = WatchMGService(
@@ -68,6 +70,9 @@ final class WatchMGHelper: NSObject, ObservableObject, WCSessionDelegate {
         Task { @MainActor in
             do {
                 if message["operation"] as? String == "info" { replyHandler(information()); return }
+                guard ProcessInfo.processInfo.operatingSystemVersion.majorVersion != 26 else {
+                    throw WatchMGWire.failure(String(localized: "watchOS 26 is not supported."))
+                }
                 if message["operation"] as? String == "respring" {
                     guard message["deviceID"] as? String == identifier else {
                         throw WatchMGWire.failure("The selected Apple Watch has changed. Reload before continuing.")

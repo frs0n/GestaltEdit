@@ -26,25 +26,15 @@
 
 Edit `com.apple.MobileGestalt.plist` on-device. Capability presets, a full field editor, and backup/restore.
 
-> [!WARNING]
-> This app uses private APIs and modifies system cache data. Bad MobileGestalt values can break system features and may require restoring the device. Use only on devices you own.
-
-> [!IMPORTANT]
-> GestaltEdit is free and its source is public. Without authorization, you may not sell it.
-
 ## Features
 
-**Presets** — Organized by purpose: Siri AI, Dynamic Island, display, iPad features and everyday device features. iPadOS Mode includes multitasking, Stage Manager and iPad app support in one selection. Liquid Glass uses a single effects selector. Extended presets include HDR photos, AOD widgets/brightness, Audio Mix, FaceTime spatial audio, seven device regions. Options are filtered by system version. Siri AI retains supported device regions and adjusts known restricted device regions when needed; it does not change Apple Account region. Settings-page options and internal experiments are collapsed under Advanced; tap ⓘ for limitations where available. Capability overrides do not guarantee hardware or service support. Selections stage changes until Apply; removing a selection does not undo an already applied preset. Use Backups to restore prior values.
-
-On unsupported iOS 27 devices, Siri AI setup temporarily spoofs an eligible model. Face ID and dictation may be unavailable while spoofed. Finish downloading Siri AI models in Settings, then use **After Model Download · Remove Device Spoof** in Restore. After removing the spoof and restarting, Face ID and dictation work again; SiriMode = 2 and AI settings are retained. The ordinary pre-write backup keeps its original timestamp-based name and performs a full restore.
-
-**Field editor** — Search and edit any MobileGestalt key by hand when a preset doesn't cover it.
-
-**Backups** — Every write is backed up automatically. Back up, import, export, and restore at any time.
+- **Presets** — Configure Siri AI, Dynamic Island, display, iPad features and more.
+- **Field editor** — Search and edit MobileGestalt keys directly.
+- **Backups** — Automatic backups with detailed before-and-after changes.
 
 ## Requirements
 
-- iOS / iPadOS 27.0 or later (iOS / iPadOS 26 is not supported for on-device MobileGestalt access)
+- iOS / iPadOS 27.0 or later
 - Developer Mode enabled
 - A signing tool such as [iLoader](https://github.com/nab138/iloader)
 
@@ -65,10 +55,8 @@ For Apple Watch support, we recommend signing with [WatchBridge](https://github.
 ## Credits
 
 - [Nugget](https://github.com/leminlimez/Nugget) — presets and iPadOS support
-- [FilzaSlop](https://github.com/0xjohnnydev/FilzaSlop), [worse_query](https://github.com/forcequitOS/worse_query), [0xJohnny](https://x.com/0xjohnny) — file access research
+- [worse_query](https://github.com/forcequitOS/worse_query) — file access research
 - [neospring](https://github.com/rooootdev/neospring) — respring implementation
-
-Not affiliated with Apple or the projects above.
 
 ## License
 

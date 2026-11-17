@@ -84,17 +84,17 @@ private struct TweakWorkbench: View {
 
                     PlacardPromotionLink()
 
-                    NavigationLink {
-                        RewardCodeView()
-                    } label: {
+                    Link(destination: URL(string: "https://ko-fi.com/su_ss")!) {
                         HStack(spacing: 12) {
-                            Image(systemName: "heart.fill")
-                                .foregroundStyle(.pink)
+                            Image("KoFi")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 28, height: 28)
                                 .frame(width: 40, height: 40)
 
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("打赏开发者")
-                                Text("扫描赞赏码支持 SUSS")
+                                Text("Support the Developer")
+                                Text("Ko-fi · SUSS")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -370,41 +370,6 @@ private struct DeveloperFooter: View {
             return Image(systemName: "person.crop.circle")
         }
         return Image(uiImage: image)
-    }
-}
-
-private struct RewardCodeView: View {
-    private let rewardCodeImage: UIImage = {
-        let imageURL = Bundle.main.url(forResource: "RewardCode", withExtension: "jpg")!
-        return UIImage(contentsOfFile: imageURL.path)!
-    }()
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                Image(uiImage: rewardCodeImage)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
-                    .accessibilityLabel("SUSS Reward Code")
-
-                Text("感谢你对 SUSS 的支持")
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
-
-                Text("打开微信扫描上方赞赏码")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: 560)
-            .padding(20)
-            .frame(maxWidth: .infinity)
-        }
-        .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle("打赏 SUSS")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
